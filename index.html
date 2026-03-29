@@ -10,17 +10,22 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="lang-ja">
     <header>
         <nav class="container">
             <div class="logo">
                 <img src="assets/icon.png" alt="Passage Logo">
                 <span>Passage</span>
+                <div class="lang-switch">
+                    <button id="btn-ja" class="active">JP</button>
+                    <span>/</span>
+                    <button id="btn-en">EN</button>
+                </div>
             </div>
             <ul>
-                <li><a href="#features">Function</a></li>
-                <li><a href="#gallery">Gallery</a></li>
-                <li><a href="https://docs.google.com/forms/d/e/1FAIpQLSebRQow_j1FnCJyl7z-gf32IAF-gva2hb0vCPYYvckSPqXYug/viewform?usp=header" target="_blank">Contact Us</a></li>
+                <li><a href="#features"><span class="lang-ja">機能</span><span class="lang-en">Features</span></a></li>
+                <li><a href="#gallery"><span class="lang-ja">ギャラリー</span><span class="lang-en">Gallery</span></a></li>
+                <li><a href="https://docs.google.com/forms/d/e/1FAIpQLSebRQow_j1FnCJyl7z-gf32IAF-gva2hb0vCPYYvckSPqXYug/viewform?usp=header" target="_blank"><span class="lang-ja">サポート</span><span class="lang-en">Support</span></a></li>
             </ul>
         </nav>
     </header>
@@ -29,8 +34,14 @@
         <section class="hero">
             <div class="container hero-content">
                 <div class="hero-text">
-                    <h1>旅の軌跡を、<br><span class="highlight">美しい一枚に。</span></h1>
-                    <p>Passage（パッセージ）は、あなたの旅の写真にフライト情報や移動ルートを美しくオーバーレイするアプリです。位置情報を読み取り、その瞬間の高度や速度、空の路を記録します。</p>
+                    <h1>
+                        <span class="lang-ja">旅の軌跡を、<br><span class="highlight">美しい一枚に。</span></span>
+                        <span class="lang-en">Your journey,<br><span class="highlight">captured beautifully.</span></span>
+                    </h1>
+                    <p>
+                        <span class="lang-ja">Passage（パッセージ）は、あなたの旅の写真にフライト情報や移動ルートを美しくオーバーレイするアプリです。位置情報を読み取り、その瞬間の高度や速度、空の路を記録します。</span>
+                        <span class="lang-en">Passage is an app that beautifully overlays flight info and routes onto your travel photos. It captures altitude, speed, and your path through the sky based on GPS data.</span>
+                    </p>
                     <div class="cta-buttons">
                         <a href="#" class="btn btn-store">
                             <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store">
@@ -41,34 +52,64 @@
                     </div>
                 </div>
                 <div class="hero-image">
-                    <img src="assets/screenshot1.png" alt="App Screenshot" class="floating">
+                    <img src="assets/screenshot1.png" 
+                         data-ja="assets/screenshot1.png" 
+                         data-en="assets/screenshot1_en.png" 
+                         alt="App Screenshot" class="lang-img floating">
                 </div>
             </div>
         </section>
 
         <section id="features" class="features">
             <div class="container">
-                <h2 class="section-title">主な機能</h2>
+                <h2 class="section-title">
+                    <span class="lang-ja">主な機能</span>
+                    <span class="lang-en">Key Features</span>
+                </h2>
                 <div class="feature-grid">
                     <div class="feature-card">
                         <div class="icon">✈️</div>
-                        <h3>フライト詳細を記録</h3>
-                        <p>高度、速度、航空会社など、空の旅の重要なデータを写真にオーバーレイします。</p>
+                        <h3>
+                            <span class="lang-ja">フライト詳細を記録</span>
+                            <span class="lang-en">Track Flight Details</span>
+                        </h3>
+                        <p>
+                            <span class="lang-ja">高度、速度、航空会社など、空の旅の重要なデータを写真にオーバーレイします。</span>
+                            <span class="lang-en">Overlay altitude, speed, airline info, and other vital flight data onto your photos.</span>
+                        </p>
                     </div>
                     <div class="feature-card">
                         <div class="icon">🗺️</div>
-                        <h3>精密なルートマップ</h3>
-                        <p>内蔵された地図データを使用して、写真が撮られた瞬間の位置と移動経路を描画します。</p>
+                        <h3>
+                            <span class="lang-ja">精密なルートマップ</span>
+                            <span class="lang-en">Precise Route Maps</span>
+                        </h3>
+                        <p>
+                            <span class="lang-ja">内蔵された地図データを使用して、写真が撮られた瞬間の位置と移動経路を描画します。</span>
+                            <span class="lang-en">Draws your location and journey the moment the photo was taken using built-in maps.</span>
+                        </p>
                     </div>
                     <div class="feature-card">
                         <div class="icon">📸</div>
-                        <h3>EXIF情報の自動解析</h3>
-                        <p>写真に含まれる位置情報と撮影日時から、最適な移動情報を自動的に抽出します。</p>
+                        <h3>
+                            <span class="lang-ja">EXIF情報の自動解析</span>
+                            <span class="lang-en">Auto EXIF Analysis</span>
+                        </h3>
+                        <p>
+                            <span class="lang-ja">写真に含まれる位置情報と撮影日時から、最適な移動情報を自動的に抽出します。</span>
+                            <span class="lang-en">Automatically extracts movement data from your photos' GPS and timestamp.</span>
+                        </p>
                     </div>
                     <div class="feature-card">
                         <div class="icon">🚆</div>
-                        <h3>列車・交通機関対応</h3>
-                        <p>飛行機だけでなく、新幹線や電車など、様々な交通機関での旅にも対応しています。</p>
+                        <h3>
+                            <span class="lang-ja">列車・交通機関対応</span>
+                            <span class="lang-en">Trains & Transit</span>
+                        </h3>
+                        <p>
+                            <span class="lang-ja">飛行機だけでなく、新幹線や電車など、様々な交通機関での旅にも対応しています。</span>
+                            <span class="lang-en">Works with flights, Shinkansen, trains, and various modes of transportation.</span>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -76,13 +117,16 @@
 
         <section id="gallery" class="gallery">
             <div class="container">
-                <h2 class="section-title">ギャラリー</h2>
+                <h2 class="section-title">
+                    <span class="lang-ja">ギャラリー</span>
+                    <span class="lang-en">Gallery</span>
+                </h2>
                 <div class="gallery-scroll">
-                    <img src="assets/screenshot2.png" alt="Screenshot 2">
-                    <img src="assets/screenshot3.png" alt="Screenshot 3">
-                    <img src="assets/screenshot4.png" alt="Screenshot 4">
-                    <img src="assets/screenshot5.png" alt="Screenshot 5">
-                    <img src="assets/screenshot6.png" alt="Screenshot 6">
+                    <img src="assets/screenshot2.png" data-ja="assets/screenshot2.png" data-en="assets/screenshot2_en.png" alt="Screenshot 2" class="lang-img">
+                    <img src="assets/screenshot3.png" data-ja="assets/screenshot3.png" data-en="assets/screenshot3_en.png" alt="Screenshot 3" class="lang-img">
+                    <img src="assets/screenshot4.png" data-ja="assets/screenshot4.png" data-en="assets/screenshot4_en.png" alt="Screenshot 4" class="lang-img">
+                    <img src="assets/screenshot5.png" data-ja="assets/screenshot5.png" data-en="assets/screenshot5_en.png" alt="Screenshot 5" class="lang-img">
+                    <img src="assets/screenshot6.png" data-ja="assets/screenshot6.png" data-en="assets/screenshot6_en.png" alt="Screenshot 6" class="lang-img">
                 </div>
             </div>
         </section>
@@ -90,8 +134,14 @@
         <section class="about">
             <div class="container">
                 <div class="about-content">
-                    <h2>こだわり抜かれたデザイン</h2>
-                    <p>シンプルでありながら、旅の高揚感を損なわない洗練されたデザイン。あなたの最高の一枚を、より特別なものに変えます。</p>
+                    <h2>
+                        <span class="lang-ja">こだわり抜かれたデザイン</span>
+                        <span class="lang-en">Exquisite Design</span>
+                    </h2>
+                    <p>
+                        <span class="lang-ja">シンプルでありながら、旅の高揚感を損なわない洗練されたデザイン。あなたの最高の一枚を、より特別なものに変えます。</span>
+                        <span class="lang-en">A sophisticated design that enhances your travel stories. Elevate your best shots into something truly special.</span>
+                    </p>
                 </div>
             </div>
         </section>
@@ -101,8 +151,11 @@
         <div class="container">
             <p>&copy; 2026 Passage. Developed by Yakigaki.</p>
             <div class="footer-links">
-                <a href="https://docs.google.com/forms/d/e/1FAIpQLSebRQow_j1FnCJyl7z-gf32IAF-gva2hb0vCPYYvckSPqXYug/viewform?usp=header">Contact Us</a>
-                <a href="https://sites.google.com/view/passage-app-privacypolicy">Privacy Policy</a>
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSebRQow_j1FnCJyl7z-gf32IAF-gva2hb0vCPYYvckSPqXYug/viewform?usp=header" target="_blank">
+                    <span class="lang-ja">サポート</span>
+                    <span class="lang-en">Support</span>
+                </a>
+                <a href="#">Privacy Policy</a>
             </div>
         </div>
     </footer>

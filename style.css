@@ -367,3 +367,42 @@ header.scrolled {
         display: none;
     }
 }
+
+/* Language Switcher */
+.lang-switch {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-left: 0.5rem;
+    padding: 0.2rem 0.6rem;
+    background: var(--surface);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+}
+
+.lang-switch button {
+    background: none;
+    border: none;
+    color: inherit;
+    font-family: inherit;
+    font-weight: inherit;
+    font-size: inherit;
+    cursor: pointer;
+    padding: 0;
+    transition: var(--transition);
+}
+
+.lang-switch button:hover {
+    color: var(--primary);
+}
+
+.lang-switch button.active {
+    color: var(--primary);
+}
+
+/* Language Visibility */
+body.lang-en .lang-ja { display: none !important; }
+body.lang-ja .lang-en { display: none !important; }
