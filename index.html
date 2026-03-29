@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passage - 旅の軌跡を、美しい一枚に。</title>
+    <meta name="description" content="Passageは、フライトや列車の移動情報を写真に美しくオーバーレイするiOSアプリです。高度、速度、ルートマップを自動で写真に刻みます。">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <nav class="container">
+            <div class="logo">
+                <img src="assets/icon.png" alt="Passage Logo">
+                <span>Passage</span>
+            </div>
+            <ul>
+                <li><a href="#features">機能</a></li>
+                <li><a href="#gallery">ギャラリー</a></li>
+                <li><a href="https://github.com/hiroyukitakada/FlightPhotoOverlay-iOS" target="_blank">GitHub</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container hero-content">
+                <div class="hero-text">
+                    <h1>旅の軌跡を、<br><span class="highlight">美しい一枚に。</span></h1>
+                    <p>Passage（パッセージ）は、あなたの旅の写真にフライト情報や移動ルートを美しくオーバーレイするアプリです。位置情報を読み取り、その瞬間の高度や速度、空の路を記録します。</p>
+                    <div class="cta-buttons">
+                        <a href="#" class="btn btn-store">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store">
+                        </a>
+                        <a href="https://play.google.com/store/apps/details?id=com.flightphoto.passage" class="btn btn-store" target="_blank">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play">
+                        </a>
+                    </div>
+                </div>
+                <div class="hero-image">
+                    <img src="assets/screenshot1.png" alt="App Screenshot" class="floating">
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features">
+            <div class="container">
+                <h2 class="section-title">主な機能</h2>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="icon">✈️</div>
+                        <h3>フライト詳細を記録</h3>
+                        <p>高度、速度、航空会社など、空の旅の重要なデータを写真にオーバーレイします。</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon">🗺️</div>
+                        <h3>精密なルートマップ</h3>
+                        <p>内蔵された地図データを使用して、写真が撮られた瞬間の位置と移動経路を描画します。</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon">📸</div>
+                        <h3>EXIF情報の自動解析</h3>
+                        <p>写真に含まれる位置情報と撮影日時から、最適な移動情報を自動的に抽出します。</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon">🚆</div>
+                        <h3>列車・交通機関対応</h3>
+                        <p>飛行機だけでなく、新幹線や電車など、様々な交通機関での旅にも対応しています。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="gallery" class="gallery">
+            <div class="container">
+                <h2 class="section-title">ギャラリー</h2>
+                <div class="gallery-scroll">
+                    <img src="assets/screenshot2.png" alt="Screenshot 2">
+                    <img src="assets/screenshot3.png" alt="Screenshot 3">
+                    <img src="assets/screenshot4.png" alt="Screenshot 4">
+                    <img src="assets/screenshot5.png" alt="Screenshot 5">
+                    <img src="assets/screenshot6.png" alt="Screenshot 6">
+                </div>
+            </div>
+        </section>
+
+        <section class="about">
+            <div class="container">
+                <div class="about-content">
+                    <h2>こだわり抜かれたデザイン</h2>
+                    <p>シンプルでありながら、旅の高揚感を損なわない洗練されたデザイン。あなたの最高の一枚を、より特別なものに変えます。</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Passage. Developed by Yakigaki.</p>
+            <div class="footer-links">
+                <a href="https://github.com/hiroyukitakada/FlightPhotoOverlay-iOS">GitHub</a>
+                <a href="#">Privacy Policy</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
