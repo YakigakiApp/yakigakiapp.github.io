@@ -111,3 +111,4 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedLang = localStorage.getItem('preferred-lang') || (navigator.language.startsWith('ja') ? 'ja' : 'en');
     setLanguage(savedLang);
 });
+ 
