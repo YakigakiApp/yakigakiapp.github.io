@@ -1,4 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Decrypt secure emails to protect against crawlers
+    document.querySelectorAll('.secure-email').forEach(el => {
+        const u = atob(el.getAttribute('data-u'));
+        const d = atob(el.getAttribute('data-d'));
+        const email = `${u}@${d}`;
+        el.innerHTML = `<a href="mailto:${email}">${email}</a>`;
+    });
+
     // Reveal animations on scroll
     const observerOptions = {
         threshold: 0.1
@@ -52,14 +60,21 @@ document.addEventListener('DOMContentLoaded', () => {
     function setLanguage(lang) {
         const metaDesc = document.querySelector('meta[name="description"]');
         const langImages = document.querySelectorAll('.lang-img');
+        const isLegalPage = window.location.pathname.includes('legal.html');
 
         if (lang === 'en') {
             body.classList.remove('lang-ja');
             body.classList.add('lang-en');
             btnEn.classList.add('active');
             btnJa.classList.remove('active');
-            document.title = "Passage - Your journey, captured beautifully.";
-            if (metaDesc) metaDesc.content = "Passage beautifully overlays flight info and routes onto your travel photos. Captures altitude, speed, and your path through the sky.";
+            
+            if (isLegalPage) {
+                document.title = "Passage - Legal Notice";
+                if (metaDesc) metaDesc.content = "Legal notice for Passage under the Japanese Act on Specified Commercial Transactions and the EU Digital Services Act.";
+            } else {
+                document.title = "Passage - Your journey, captured beautifully.";
+                if (metaDesc) metaDesc.content = "Passage beautifully overlays flight info and routes onto your travel photos. Captures altitude, speed, and your path through the sky.";
+            }
             
             // Swap to English images
             langImages.forEach(img => {
@@ -70,8 +85,14 @@ document.addEventListener('DOMContentLoaded', () => {
             body.classList.add('lang-ja');
             btnJa.classList.add('active');
             btnEn.classList.remove('active');
-            document.title = "Passage - 旅の軌跡を、美しい一枚に。";
-            if (metaDesc) metaDesc.content = "Passageは、フライトや列車の移動情報を写真に美しくオーバーレイするiOSアプリです。高度、速度、ルートマップを自動で写真に刻みます。";
+            
+            if (isLegalPage) {
+                document.title = "Passage - 特定商取引法に基づく表記 / DSA対応表示";
+                if (metaDesc) metaDesc.content = "Passageの特定商取引法に基づく表記およびEU DSA対応に関する法的表示です。";
+            } else {
+                document.title = "Passage - 旅の軌跡を、美しい一枚に。";
+                if (metaDesc) metaDesc.content = "Passageは、フライトや列車の移動情報を写真に美しくオーバーレイするiOSアプリです。出発/到着地、ルートマップを自動で写真に刻みます。";
+            }
 
             // Swap to Japanese images
             langImages.forEach(img => {

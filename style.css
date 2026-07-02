@@ -406,3 +406,64 @@ header.scrolled {
 /* Language Visibility */
 body.lang-en .lang-ja { display: none !important; }
 body.lang-ja .lang-en { display: none !important; }
+
+/* Legal Table Styling */
+.legal-table-container {
+    width: 100%;
+    margin-top: 2rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--bg);
+}
+
+.legal-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.legal-table th,
+.legal-table td {
+    padding: 1.25rem 1.5rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+}
+
+.legal-table tr:last-child th,
+.legal-table tr:last-child td {
+    border-bottom: none;
+}
+
+.legal-table th {
+    width: 250px;
+    font-weight: 700;
+    color: var(--text);
+    background-color: var(--surface);
+}
+
+.legal-table td {
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+    .legal-table th,
+    .legal-table td {
+        display: block;
+        width: 100%;
+    }
+    
+    .legal-table th {
+        background-color: var(--surface);
+        padding-bottom: 0.5rem;
+        border-bottom: none;
+    }
+    
+    .legal-table td {
+        padding-top: 0.5rem;
+        padding-bottom: 1.25rem;
+    }
+}
+
