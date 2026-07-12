@@ -4,7 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Passage - 旅の軌跡を、美しい一枚に。</title>
-    <meta name="description" content="Passageは、フライトや列車の移動情報を写真に美しくオーバーレイするアプリです。出発/到着地、ルートマップを自動で写真に刻みます。">
+    <meta name="description" content="Passageは、フライトや列車の移動情報を写真に美しくオーバーレイするiOSアプリです。出発/到着地、ルートマップを自動で写真に刻みます。">
+    <link rel="canonical" href="https://yakigakiapp.github.io/">
+    <link rel="alternate" hreflang="ja" href="https://yakigakiapp.github.io/">
+    <link rel="alternate" hreflang="en" href="https://yakigakiapp.github.io/?lang=en">
+    <link rel="alternate" hreflang="x-default" href="https://yakigakiapp.github.io/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Passage">
+    <meta property="og:title" content="Passage - 旅の軌跡を、美しい一枚に。">
+    <meta property="og:description" content="Passageは、フライトや列車の移動情報を写真に美しくオーバーレイするiOSアプリです。出発/到着地、ルートマップを自動で写真に刻みます。">
+    <meta property="og:image" content="https://yakigakiapp.github.io/assets/og-image.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:url" content="https://yakigakiapp.github.io/">
+    <meta property="og:locale" content="ja_JP">
+    <meta property="og:locale:alternate" content="en_US">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Passage - 旅の軌跡を、美しい一枚に。">
+    <meta name="twitter:description" content="Passageは、フライトや列車の移動情報を写真に美しくオーバーレイするiOSアプリです。出発/到着地、ルートマップを自動で写真に刻みます。">
+    <meta name="twitter:image" content="https://yakigakiapp.github.io/assets/og-image.jpg">
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,6 +43,8 @@
             <ul>
                 <li><a href="#features"><span class="lang-ja">機能</span><span class="lang-en">Features</span></a></li>
                 <li><a href="#gallery"><span class="lang-ja">ギャラリー</span><span class="lang-en">Gallery</span></a></li>
+                <li><a href="#plus"><span class="lang-ja">Plus</span><span class="lang-en">Plus</span></a></li>
+                <li><a href="#sns"><span class="lang-ja">投稿</span><span class="lang-en">Posts</span></a></li>
                 <li><a href="https://docs.google.com/forms/d/e/1FAIpQLSebRQow_j1FnCJyl7z-gf32IAF-gva2hb0vCPYYvckSPqXYug/viewform?usp=header" target="_blank"><span class="lang-ja">サポート</span><span class="lang-en">Support</span></a></li>
             </ul>
         </nav>
@@ -52,9 +72,9 @@
                     </div>
                 </div>
                 <div class="hero-image">
-                    <img src="assets/screenshot1.png" 
-                         data-ja="assets/screenshot1.png" 
-                         data-en="assets/screenshot1_en.png" 
+                    <img src="assets/screenshot1.jpg"
+                         data-ja="assets/screenshot1.jpg"
+                         data-en="assets/screenshot1_en.jpg"
                          alt="App Screenshot" class="lang-img floating">
                 </div>
             </div>
@@ -85,8 +105,8 @@
                             <span class="lang-en">Precise Route Maps</span>
                         </h3>
                         <p>
-                            <span class="lang-ja">内蔵された地図データを使用して、写真が撮られた瞬間の位置と移動経路を描画します。</span>
-                            <span class="lang-en">Draws your location and journey the moment the photo was taken using built-in maps.</span>
+                            <span class="lang-ja">内蔵された地図データを使用して、写真が撮られた瞬間の位置と移動経路を描画します。車での移動やドライブの走行軌跡の描画にも対応。</span>
+                            <span class="lang-en">Draws your location and journey the moment the photo was taken using built-in maps. Also supports drawing driving routes and road trips.</span>
                         </p>
                     </div>
                     <div class="feature-card">
@@ -96,8 +116,8 @@
                             <span class="lang-en">Auto EXIF Analysis</span>
                         </h3>
                         <p>
-                            <span class="lang-ja">写真に含まれる位置情報と撮影日時から、最適な移動情報を自動的に抽出します。</span>
-                            <span class="lang-en">Automatically extracts movement data from your photos' GPS and timestamp.</span>
+                            <span class="lang-ja">写真に含まれる位置情報と撮影日時から、最適な移動情報を自動的に抽出します。過去に撮った写真からでも作成できます。</span>
+                            <span class="lang-en">Automatically extracts movement data from your photos' GPS and timestamp. Works even with photos you took long ago.</span>
                         </p>
                     </div>
                     <div class="feature-card">
@@ -111,6 +131,28 @@
                             <span class="lang-en">Works with flights, Shinkansen, trains, and various modes of transportation.</span>
                         </p>
                     </div>
+                    <div class="feature-card">
+                        <div class="icon">📅</div>
+                        <h3>
+                            <span class="lang-ja">撮影日時をそのまま保持</span>
+                            <span class="lang-en">Keeps Original Timestamps</span>
+                        </h3>
+                        <p>
+                            <span class="lang-ja">作成した画像も元の撮影日時を引き継いで保存されるので、アルバムの時系列が崩れません。</span>
+                            <span class="lang-en">Exported photos keep their original capture date, so your album timeline stays intact.</span>
+                        </p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon">📍</div>
+                        <h3>
+                            <span class="lang-ja">ギャラリーマップ</span>
+                            <span class="lang-en">Gallery Map</span>
+                        </h3>
+                        <p>
+                            <span class="lang-ja">撮影地ごとに写真が地図上にまとまり、旅の記憶をひとめで見渡せます。</span>
+                            <span class="lang-en">Photos are grouped by location on a map, so you can see your travel memories at a glance.</span>
+                        </p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -122,12 +164,91 @@
                     <span class="lang-en">Gallery</span>
                 </h2>
                 <div class="gallery-scroll">
-                    <img src="assets/screenshot2.png" data-ja="assets/screenshot2.png" data-en="assets/screenshot2_en.png" alt="Screenshot 2" class="lang-img">
-                    <img src="assets/screenshot3.png" data-ja="assets/screenshot3.png" data-en="assets/screenshot3_en.png" alt="Screenshot 3" class="lang-img">
-                    <img src="assets/screenshot4.png" data-ja="assets/screenshot4.png" data-en="assets/screenshot4_en.png" alt="Screenshot 4" class="lang-img">
-                    <img src="assets/screenshot5.png" data-ja="assets/screenshot5.png" data-en="assets/screenshot5_en.png" alt="Screenshot 5" class="lang-img">
-                    <img src="assets/screenshot6.png" data-ja="assets/screenshot6.png" data-en="assets/screenshot6_en.png" alt="Screenshot 6" class="lang-img">
+                    <img src="assets/screenshot2.jpg" data-ja="assets/screenshot2.jpg" data-en="assets/screenshot2_en.jpg" alt="JR九州 列車のオーバーレイ" class="lang-img">
+                    <img src="assets/screenshot3.jpg" data-ja="assets/screenshot3.jpg" data-en="assets/screenshot3_en.jpg" alt="ロンドンからマンチェスターへの車の走行軌跡" class="lang-img">
+                    <img src="assets/screenshot4.jpg" data-ja="assets/screenshot4.jpg" data-en="assets/screenshot4_en.jpg" alt="EXIF情報から自動生成したAMS→NCEのルートマップ" class="lang-img">
+                    <img src="assets/screenshot5.jpg" data-ja="assets/screenshot5.jpg" data-en="assets/screenshot5_en.jpg" alt="過去の写真から作成したHNL→NRTのルートマップ" class="lang-img">
+                    <img src="assets/screenshot6.jpg" data-ja="assets/screenshot6.jpg" data-en="assets/screenshot6_en.jpg" alt="元の撮影日時を維持して保存される画面" class="lang-img">
+                    <img src="assets/screenshot7.jpg" data-ja="assets/screenshot7.jpg" data-en="assets/screenshot7_en.jpg" alt="フライト情報の設定画面" class="lang-img">
+                    <img src="assets/screenshot8.jpg" data-ja="assets/screenshot8.jpg" data-en="assets/screenshot8_en.jpg" alt="撮影地ごとに写真がまとまるギャラリーマップ" class="lang-img">
                 </div>
+            </div>
+        </section>
+
+        <section id="plus" class="plus">
+            <div class="container">
+                <h2 class="section-title">Passage Plus</h2>
+                <p class="plus-lead">
+                    <span class="lang-ja">もっと自由に、もっと美しく。</span>
+                    <span class="lang-en">More freedom, more beauty.</span>
+                </p>
+                <div class="plus-grid">
+                    <div class="plus-card">
+                        <span class="plus-badge">PLUS</span>
+                        <div class="icon">🔤</div>
+                        <h3>
+                            <span class="lang-ja">プレミアムフォント</span>
+                            <span class="lang-en">Premium Fonts</span>
+                        </h3>
+                        <p>
+                            <span class="lang-ja">iOS内蔵の上質な7書体でオーバーレイを自分好みにスタイリング。</span>
+                            <span class="lang-en">Style overlays with 7 premium iOS fonts.</span>
+                        </p>
+                    </div>
+                    <div class="plus-card">
+                        <span class="plus-badge">PLUS</span>
+                        <div class="icon">✂️</div>
+                        <h3>
+                            <span class="lang-ja">クロップ＆白フレーム</span>
+                            <span class="lang-en">Crop & White Frame</span>
+                        </h3>
+                        <p>
+                            <span class="lang-ja">SNS投稿に映える余白フレーム付きでエクスポートできます。</span>
+                            <span class="lang-en">Export with clean white borders, perfect for social media.</span>
+                        </p>
+                    </div>
+                    <div class="plus-card">
+                        <span class="plus-badge">PLUS</span>
+                        <div class="icon">🎫</div>
+                        <h3>
+                            <span class="lang-ja">パス</span>
+                            <span class="lang-en">Passes</span>
+                        </h3>
+                        <p>
+                            <span class="lang-ja">1年パスなど期間パス制。価格はアプリ内でご確認ください。</span>
+                            <span class="lang-en">Term passes including a 1-year pass. See pricing in the app.</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="cta-buttons plus-cta">
+                    <a href="https://apps.apple.com/app/id6761323054" class="btn btn-store">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store">
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section id="sns" class="sns">
+            <div class="container">
+                <h2 class="section-title">
+                    <span class="lang-ja">#Passage で共有しよう</span>
+                    <span class="lang-en">Share with #Passage</span>
+                </h2>
+                <p class="sns-lead">
+                    <span class="lang-ja">あなたの旅の一枚を #Passage をつけて投稿してください。素敵な投稿はこちらで紹介します。</span>
+                    <span class="lang-en">Post your travel photos with #Passage — we'll feature our favorite posts here.</span>
+                </p>
+                <div class="sns-links">
+                    <a href="https://x.com/search?q=%23Passage&f=live" target="_blank" rel="noopener" class="btn btn-outline">
+                        <span class="lang-ja">Xで #Passage を見る</span>
+                        <span class="lang-en">View #Passage on X</span>
+                    </a>
+                    <a href="https://www.threads.net/search?q=%23Passage&serp_type=tags" target="_blank" rel="noopener" class="btn btn-outline">
+                        <span class="lang-ja">Threadsで見る</span>
+                        <span class="lang-en">View on Threads</span>
+                    </a>
+                </div>
+                <div id="sns-grid" class="sns-grid"></div>
             </div>
         </section>
 
@@ -164,6 +285,7 @@
         </div>
     </footer>
 
+    <script src="posts.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

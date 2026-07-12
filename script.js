@@ -22,8 +22,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }, observerOptions);
 
     // Start observing elements
-    const revealElements = document.querySelectorAll('.feature-card, .section-title, .hero-text, .hero-image');
+    const revealElements = document.querySelectorAll('.feature-card, .section-title, .hero-text, .hero-image, .plus-card');
     revealElements.forEach(el => observer.observe(el));
+
+    // Render SNS posts lazily when the #sns section scrolls into view
+    const snsSection = document.getElementById('sns');
+    if (snsSection) {
+        const snsObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    renderSocialPosts();
+                    snsObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+        snsObserver.observe(snsSection);
+    }
 
     // Track scroll for header glass effect
     const header = document.querySelector('header');
@@ -107,8 +121,61 @@ document.addEventListener('DOMContentLoaded', () => {
         btnEn.addEventListener('click', () => setLanguage('en'));
     }
 
-    // Load preferred language
-    const savedLang = localStorage.getItem('preferred-lang') || (navigator.language.startsWith('ja') ? 'ja' : 'en');
+    // Load preferred language (?lang= in URL takes priority over saved preference / browser language)
+    const urlLang = new URLSearchParams(window.location.search).get('lang');
+    const savedLang = (urlLang === 'ja' || urlLang === 'en')
+        ? urlLang
+        : (localStorage.getItem('preferred-lang') || (navigator.language.startsWith('ja') ? 'ja' : 'en'));
     setLanguage(savedLang);
 });
- 
+
+// Renders the curated SNS posts listed in posts.js (window.PASSAGE_POSTS) into #sns-grid.
+// Only loads the platform embed scripts that are actually needed, and only once.
+function renderSocialPosts() {
+    const section = document.getElementById('sns');
+    const grid = document.getElementById('sns-grid');
+    if (!section || !grid) return;
+
+    const posts = window.PASSAGE_POSTS || [];
+
+    if (posts.length === 0) {
+        section.classList.add('is-empty');
+        return;
+    }
+
+    const usedPlatforms = new Set();
+
+    posts.forEach(post => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'sns-post';
+
+        if (post.embedHtml) {
+            wrapper.innerHTML = post.embedHtml;
+        } else if (post.platform === 'x') {
+            wrapper.innerHTML = `<blockquote class="twitter-tweet"><a href="${post.url}"></a></blockquote>`;
+        } else if (post.platform === 'threads') {
+            wrapper.innerHTML = `<blockquote class="text-post-media" data-text-post-permalink="${post.url}"><a href="${post.url}"></a></blockquote>`;
+        } else {
+            return;
+        }
+
+        grid.appendChild(wrapper);
+        usedPlatforms.add(post.platform);
+    });
+
+    if (usedPlatforms.has('x') && !document.getElementById('twitter-widgets-js')) {
+        const script = document.createElement('script');
+        script.id = 'twitter-widgets-js';
+        script.src = 'https://platform.twitter.com/widgets.js';
+        script.async = true;
+        document.body.appendChild(script);
+    }
+
+    if (usedPlatforms.has('threads') && !document.getElementById('threads-embed-js')) {
+        const script = document.createElement('script');
+        script.id = 'threads-embed-js';
+        script.src = 'https://www.threads.net/embed.js';
+        script.async = true;
+        document.body.appendChild(script);
+    }
+}
