@@ -129,53 +129,94 @@ document.addEventListener('DOMContentLoaded', () => {
     setLanguage(savedLang);
 });
 
+// How many SNS posts to show before requiring a "show more" click.
+// Embeds are heavy third-party content, so we avoid rendering dozens at once.
+const SNS_INITIAL_COUNT = 6;
+
+const SNS_EMBED_SCRIPTS = {
+    x: { id: 'twitter-widgets-js', src: 'https://platform.x.com/widgets.js' },
+    threads: { id: 'threads-embed-js', src: 'https://www.threads.com/embed.js' },
+    instagram: { id: 'instagram-embed-js', src: 'https://www.instagram.com/embed.js' },
+};
+
+// Identifies the platform from either a bare post URL or a full embed-code snippet,
+// so posts.js entries don't need to declare their platform explicitly.
+function detectSnsPlatform(raw) {
+    if (/class="twitter-tweet"|(?:\/\/|^)(?:www\.)?(?:twitter|x)\.com/i.test(raw)) return 'x';
+    if (/class="text-post-media"|(?:\/\/|^)(?:www\.)?threads\.(?:net|com)/i.test(raw)) return 'threads';
+    if (/class="instagram-media"|(?:\/\/|^)(?:www\.)?instagram\.com/i.test(raw)) return 'instagram';
+    return null;
+}
+
+// A bare URL gets turned into a minimal official blockquote; a pasted embed-code
+// snippet is used as-is (any inline <script> tag inside it is inert via innerHTML
+// and harmless — the real embed script is loaded separately below).
+function buildSnsEmbedHtml(raw, platform) {
+    if (!/^https?:\/\//i.test(raw.trim())) return raw;
+    if (platform === 'x') return `<blockquote class="twitter-tweet"><a href="${raw}"></a></blockquote>`;
+    if (platform === 'threads') return `<blockquote class="text-post-media" data-text-post-permalink="${raw}"><a href="${raw}"></a></blockquote>`;
+    if (platform === 'instagram') return `<blockquote class="instagram-media" data-instgrm-permalink="${raw}" data-instgrm-version="14"></blockquote>`;
+    return '';
+}
+
+// (Re-)injects a platform's embed script so it scans the page for any
+// not-yet-processed blockquotes. Safe to call repeatedly — re-scanning
+// already-rendered embeds is a no-op for these widgets.
+function loadSnsEmbedScript(platform) {
+    const info = SNS_EMBED_SCRIPTS[platform];
+    if (!info) return;
+    const existing = document.getElementById(info.id);
+    if (existing) existing.remove();
+    const script = document.createElement('script');
+    script.id = info.id;
+    script.src = info.src;
+    script.async = true;
+    document.body.appendChild(script);
+}
+
 // Renders the curated SNS posts listed in posts.js (window.PASSAGE_POSTS) into #sns-grid.
-// Only loads the platform embed scripts that are actually needed, and only once.
+// Shows the first SNS_INITIAL_COUNT posts and reveals the rest behind a "show more"
+// button. Only loads the platform embed scripts that are actually needed.
 function renderSocialPosts() {
     const section = document.getElementById('sns');
     const grid = document.getElementById('sns-grid');
     if (!section || !grid) return;
 
-    const posts = window.PASSAGE_POSTS || [];
-
-    if (posts.length === 0) {
+    const rawPosts = window.PASSAGE_POSTS || [];
+    if (rawPosts.length === 0) {
         section.classList.add('is-empty');
         return;
     }
 
-    const usedPlatforms = new Set();
+    const posts = rawPosts.map(raw => {
+        const platform = detectSnsPlatform(raw);
+        return platform ? { platform, html: buildSnsEmbedHtml(raw, platform) } : null;
+    }).filter(Boolean);
 
-    posts.forEach(post => {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'sns-post';
-
-        if (post.embedHtml) {
-            wrapper.innerHTML = post.embedHtml;
-        } else if (post.platform === 'x') {
-            wrapper.innerHTML = `<blockquote class="twitter-tweet"><a href="${post.url}"></a></blockquote>`;
-        } else if (post.platform === 'threads') {
-            wrapper.innerHTML = `<blockquote class="text-post-media" data-text-post-permalink="${post.url}"><a href="${post.url}"></a></blockquote>`;
-        } else {
-            return;
-        }
-
-        grid.appendChild(wrapper);
-        usedPlatforms.add(post.platform);
-    });
-
-    if (usedPlatforms.has('x') && !document.getElementById('twitter-widgets-js')) {
-        const script = document.createElement('script');
-        script.id = 'twitter-widgets-js';
-        script.src = 'https://platform.twitter.com/widgets.js';
-        script.async = true;
-        document.body.appendChild(script);
+    function revealBatch(batch) {
+        const usedPlatforms = new Set();
+        batch.forEach(post => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'sns-post';
+            wrapper.innerHTML = post.html;
+            grid.appendChild(wrapper);
+            usedPlatforms.add(post.platform);
+        });
+        usedPlatforms.forEach(loadSnsEmbedScript);
     }
 
-    if (usedPlatforms.has('threads') && !document.getElementById('threads-embed-js')) {
-        const script = document.createElement('script');
-        script.id = 'threads-embed-js';
-        script.src = 'https://www.threads.net/embed.js';
-        script.async = true;
-        document.body.appendChild(script);
+    revealBatch(posts.slice(0, SNS_INITIAL_COUNT));
+
+    const remaining = posts.slice(SNS_INITIAL_COUNT);
+    if (remaining.length > 0) {
+        const moreBtn = document.createElement('button');
+        moreBtn.type = 'button';
+        moreBtn.className = 'btn btn-outline sns-more-btn';
+        moreBtn.innerHTML = '<span class="lang-ja">もっと見る</span><span class="lang-en">Show more</span>';
+        moreBtn.addEventListener('click', () => {
+            revealBatch(remaining);
+            moreBtn.remove();
+        });
+        grid.insertAdjacentElement('afterend', moreBtn);
     }
 }

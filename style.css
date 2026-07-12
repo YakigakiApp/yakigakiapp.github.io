@@ -378,6 +378,14 @@ nav a:hover {
     display: none;
 }
 
+.sns-more-btn {
+    display: flex;
+    margin: 2rem auto 0;
+    cursor: pointer;
+    background: none;
+    font: inherit;
+}
+
 .sns-post {
     background: var(--surface);
     border-radius: 24px;
