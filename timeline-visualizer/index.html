@@ -1,0 +1,2045 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Timeline Visualizer — Google マップのタイムラインを地図で描く</title>
+<meta name="description" content="Google マップからエクスポートしたタイムライン JSON を、移動手段ごとに色分けした地図と再生アニメーションで振り返るツール。データはブラウザ内だけで処理され、どこにも送信されません。" />
+<meta name="theme-color" content="#fbfaf8" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Timeline Visualizer" />
+<meta property="og:description" content="Google マップのタイムラインを、移動手段ごとに色分けした地図で振り返る。データは端末の外に出ません。" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2317191d'/%3E%3Cpath d='M4 10.5 12 7.5 20 10.5 28 7.5v14L20 24.5 12 21.5 4 24.5z' fill='%23fff'/%3E%3Cpath d='M12 7.5v14M20 10.5v14' stroke='%2317191d' stroke-width='1.4'/%3E%3C/svg%3E" />
+<!-- バージョンを固定する。@5 のままだと将来の更新でいきなり壊れうるうえ、
+     unpkg 側のキャッシュも短くなる。 -->
+<link href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" rel="stylesheet" />
+<style>
+  :root {
+    color-scheme: light;
+
+    /* 面と線。地図(positron)が寒色の淡いグレーなので、パネルは
+       わずかに暖色へ振って手前に見せる。 */
+    --bg:      #fbfaf8;
+    --field:   #ffffff;
+    --sunken:  #f4f2ee;
+    --line:    #e8e5df;
+    --line-2:  #d5d1c8;
+
+    --ink:     #17191d;
+    --ink-2:   #5f6570;
+    --ink-3:   #9a9fa8;
+
+    /* 移動手段の色。UI 側は無彩色に徹し、色はデータだけに使う。 */
+    --walk:    #2f7d54;
+    --bike:    #c07a1e;
+    --car:     #2f6bb0;
+    --transit: #7a4bb8;
+    --air:     #bd3f79;
+    --other:   #8b9099;
+    --played:  #d94141;
+    --danger:  #b4232b;
+
+    --r:  7px;
+    --pad: 20px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: grid;
+    grid-template-columns: 372px 1fr;
+    font: 13px/1.55 -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+          "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  #sidebar {
+    background: var(--bg);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  #map { height: 100%; background: var(--sunken); }
+
+  ::selection { background: #17191d; color: #fff; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  #sidebar::-webkit-scrollbar { width: 10px; }
+  #sidebar::-webkit-scrollbar-thumb {
+    background: var(--line-2); border-radius: 10px;
+    border: 3px solid var(--bg);
+  }
+
+  /* ---- 見出し ---- */
+
+  .masthead {
+    display: flex; align-items: center; gap: 10px;
+    padding: var(--pad); padding-bottom: 16px;
+    position: sticky; top: 0; z-index: 2;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+  .masthead svg { flex: none; display: block; }
+  h1 {
+    font-size: 14px; font-weight: 600; letter-spacing: -.005em;
+    margin: 0; line-height: 1.3;
+  }
+  .sub { color: var(--ink-2); font-size: 11px; margin: 1px 0 0; }
+
+  section { border-top: 1px solid var(--line); padding: 18px var(--pad); }
+  section:first-of-type { border-top: none; }
+  h2 {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .09em; color: var(--ink-3); margin: 0 0 12px;
+  }
+
+  /* ---- 読み込み ---- */
+
+  #drop {
+    border: 1px dashed var(--line-2);
+    border-radius: var(--r);
+    background: var(--field);
+    padding: 22px 14px;
+    text-align: center;
+    color: var(--ink-2);
+    font-size: 11px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, color .15s;
+  }
+  #drop:hover { border-color: var(--ink-3); }
+  #drop.over {
+    border-color: var(--ink); border-style: solid;
+    background: var(--sunken); color: var(--ink);
+  }
+  #drop strong {
+    display: block; color: var(--ink); font-size: 13px;
+    font-weight: 550; margin-bottom: 3px;
+  }
+  #file { display: none; }
+
+  .privacy {
+    font-size: 11px; color: var(--ink-2); line-height: 1.7;
+    margin: 12px 0 0; padding: 12px 13px;
+    background: var(--sunken); border-radius: var(--r);
+  }
+  .privacy p { margin: 0; color: var(--ink); }
+  .privacy b { font-weight: 600; }
+  /* 「何が外に出て何が出ないか」を並べて見せる。読まなくても対比で伝わる。 */
+  .privacy dl {
+    display: grid; grid-template-columns: auto 1fr; gap: 6px 10px;
+    margin: 10px 0 0; padding-top: 10px;
+    border-top: 1px solid var(--line-2);
+  }
+  .privacy dt { color: var(--ink); font-weight: 600; white-space: nowrap; }
+  .privacy dd { margin: 0; }
+
+  .howto { margin-top: 10px; font-size: 11px; color: var(--ink-2); }
+  .howto + .howto { margin-top: 7px; }
+  .howto summary {
+    cursor: pointer; color: var(--ink-2); list-style: none;
+    display: inline-flex; align-items: center; gap: 5px;
+    border-bottom: 1px solid var(--line-2); padding-bottom: 1px;
+  }
+  .howto summary::-webkit-details-marker { display: none; }
+  .howto summary::before {
+    content: ""; width: 0; height: 0; flex: none;
+    border: 3.5px solid transparent; border-left-color: var(--ink-3);
+    margin-right: 1px; transition: transform .15s;
+  }
+  .howto[open] summary::before { transform: rotate(90deg) translateX(1px); }
+  .howto summary:hover { color: var(--ink); }
+  .howto h3 {
+    font-size: 11px; font-weight: 600; color: var(--ink);
+    margin: 12px 0 3px; letter-spacing: .01em;
+  }
+  .howto p { margin: 0; line-height: 1.75; }
+  .howto b { font-weight: 600; color: var(--ink); }
+  .howto ul { margin: 9px 0 0; padding-left: 1.15em; }
+  .howto li { margin-bottom: 6px; line-height: 1.75; }
+  .howto li:last-child { margin-bottom: 0; }
+  .howto li::marker { color: var(--ink-3); }
+  .howto .note {
+    margin-top: 12px; padding-top: 10px;
+    border-top: 1px solid var(--line); color: var(--ink-3);
+  }
+
+  /* ---- フォーム ---- */
+
+  label {
+    display: block; font-size: 10px; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: .07em;
+    margin-bottom: 4px;
+  }
+  input[type=date], select {
+    width: 100%; padding: 7px 9px;
+    border: 1px solid var(--line-2); border-radius: 6px;
+    font: inherit; background: var(--field); color: var(--ink);
+  }
+  select {
+    appearance: none; padding-right: 26px; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%239a9fa8' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 9px center;
+    background-size: 9px;
+  }
+  input[type=date]:hover, select:hover { border-color: var(--ink-3); }
+  .row { display: flex; gap: 8px; }
+  .row > div { flex: 1; min-width: 0; }
+  .field + .field, .player + .field { margin-top: 12px; }
+
+  .presets { display: flex; gap: 5px; margin-top: 10px; }
+  .presets button {
+    flex: 1; padding: 5px 4px; font: inherit; font-size: 11px;
+    border: 1px solid var(--line-2); background: var(--field);
+    border-radius: 5px; cursor: pointer; color: var(--ink-2);
+    white-space: nowrap; transition: border-color .12s, color .12s;
+  }
+  .presets button:hover { border-color: var(--ink); color: var(--ink); }
+
+  /* ---- チェックボックス ---- */
+
+  .checks { display: grid; gap: 9px; }
+  .check {
+    display: flex; align-items: flex-start; gap: 9px;
+    font-size: 12px; color: var(--ink); cursor: pointer;
+  }
+  .check input {
+    appearance: none; margin: 1px 0 0; flex: none;
+    width: 15px; height: 15px; border-radius: 4px;
+    border: 1px solid var(--line-2); background: var(--field);
+    cursor: pointer; transition: border-color .12s, background .12s;
+  }
+  .check:hover input { border-color: var(--ink-3); }
+  .check input:checked {
+    background: var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.6 6.3l2.3 2.3 4.5-5' fill='none' stroke='%23fff' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat;
+    border-color: var(--ink);
+  }
+
+  .hint { font-size: 11px; color: var(--ink-2); line-height: 1.6; margin: 12px 0 0; }
+
+  button.wide {
+    width: 100%; margin-top: 10px; padding: 8px;
+    font: inherit; font-size: 12px;
+    border: 1px solid var(--line-2); border-radius: 6px;
+    background: var(--field); color: var(--ink); cursor: pointer;
+    transition: border-color .12s, background .12s, color .12s;
+  }
+  button.wide:hover:not(:disabled) { border-color: var(--ink); background: var(--ink); color: #fff; }
+  button.wide:disabled { color: var(--ink-3); background: transparent; cursor: default; }
+
+  /* ---- 統計 ---- */
+
+  .stats {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1px; background: var(--line);
+    border: 1px solid var(--line); border-radius: var(--r);
+    overflow: hidden;
+  }
+  .stat { background: var(--field); padding: 10px 12px; }
+  .stat .k {
+    font-size: 10px; color: var(--ink-3);
+    letter-spacing: .06em; text-transform: uppercase;
+  }
+  .stat .v {
+    font-size: 17px; line-height: 1.35; letter-spacing: -.015em;
+    font-variant-numeric: tabular-nums; margin-top: 1px;
+  }
+
+  /* ---- 凡例 ---- */
+
+  .legend { display: grid; gap: 8px; }
+  .legend div { display: flex; align-items: center; gap: 9px; font-size: 12px; }
+  .legend b {
+    margin-left: auto; font-weight: 400; font-size: 11px;
+    color: var(--ink-2); font-variant-numeric: tabular-nums;
+  }
+  .swatch { width: 18px; height: 3px; border-radius: 2px; flex: none; }
+  /* 途切れた区間は色ではなく線種で示すので、凡例でも中立色にする */
+  .swatch.dashed { height: 0; border-radius: 0; border-top: 2px dashed var(--ink-3); }
+
+  /* ---- 再生 ---- */
+
+  .player { display: flex; align-items: center; gap: 12px; }
+  #play {
+    width: 36px; height: 36px; flex: none; border-radius: 50%;
+    border: 1px solid var(--line-2); background: var(--field);
+    cursor: pointer; position: relative; padding: 0;
+    transition: border-color .12s, background .12s;
+  }
+  #play:hover:not(:disabled) { border-color: var(--ink); background: var(--ink); }
+  #play::before {
+    content: ""; position: absolute; inset: 0; margin: auto;
+    width: 0; height: 0;
+    border: 6px solid transparent; border-left: 10px solid var(--ink);
+    transform: translateX(2px);
+  }
+  #play:hover:not(:disabled)::before { border-left-color: #fff; }
+  /* 再生中は一時停止の 2 本線に切り替える */
+  #play.playing::before {
+    width: 4px; height: 12px; border: none; transform: translateX(-3.5px);
+    background: var(--ink); box-shadow: 7px 0 0 var(--ink);
+  }
+  #play.playing:hover::before { background: #fff; box-shadow: 7px 0 0 #fff; }
+  #play:disabled { cursor: default; border-color: var(--line); }
+  #play:disabled::before { border-left-color: var(--ink-3); }
+
+  #seek {
+    flex: 1; min-width: 0; appearance: none;
+    background: transparent; height: 16px; cursor: pointer;
+  }
+  /* 再生済みの部分を塗る。--p は paintSeek() が更新する。 */
+  #seek::-webkit-slider-runnable-track {
+    height: 3px; border-radius: 3px;
+    background: linear-gradient(to right,
+      var(--played) 0 var(--p, 0%), var(--line-2) var(--p, 0%) 100%);
+  }
+  #seek::-moz-range-track { height: 3px; border-radius: 3px; background: var(--line-2); }
+  #seek::-moz-range-progress { height: 3px; border-radius: 3px; background: var(--played); }
+  #seek::-webkit-slider-thumb {
+    appearance: none; width: 13px; height: 13px; border-radius: 50%;
+    background: var(--played); border: 2px solid var(--field);
+    margin-top: -5px; box-shadow: 0 0 0 1px var(--line-2);
+  }
+  #seek::-moz-range-thumb {
+    width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--field);
+    background: var(--played); box-shadow: 0 0 0 1px var(--line-2);
+  }
+  #seek:disabled { cursor: default; opacity: .55; }
+
+  #clock {
+    font-variant-numeric: tabular-nums; font-size: 11px;
+    text-align: center; color: var(--ink-2);
+    margin-top: 10px; min-height: 17px;
+  }
+
+  /* ---- 状態表示 ---- */
+
+  #status {
+    font-size: 11px; color: var(--ink-2); line-height: 1.5;
+    margin-top: 10px; min-height: 16px;
+  }
+  #status.error { color: var(--danger); }
+
+  section.disabled { opacity: .45; pointer-events: none; }
+
+  footer {
+    padding: 16px var(--pad) 24px;
+    border-top: 1px solid var(--line);
+    font-size: 10.5px; line-height: 1.7; color: var(--ink-3);
+  }
+  footer a { color: var(--ink-2); }
+
+  /* ---- 地図上のパーツ ---- */
+
+  .maplibregl-popup-content {
+    border-radius: var(--r); border: 1px solid var(--line);
+    padding: 12px 13px; box-shadow: 0 6px 20px rgba(23, 25, 29, .13);
+    font: 13px/1.55 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    color: var(--ink);
+  }
+  .maplibregl-ctrl-group { border-radius: 6px !important; box-shadow: 0 1px 4px rgba(23,25,29,.16) !important; }
+  .editor-when { font-size: 11px; color: var(--ink-2); margin-bottom: 8px; }
+  .editor select { font-size: 12px; }
+
+  /* ---- 狭い画面 ---- */
+
+  #split { display: none; }
+
+  @media (max-width: 760px) {
+    /* --split は境界のドラッグで書き換わる。未設定なら 46vh。 */
+    body {
+      grid-template-columns: 1fr;
+      grid-template-rows: var(--split, 46vh) auto 1fr;
+    }
+    #map { order: 1; }
+    #split { order: 2; }
+    #sidebar { order: 3; border-right: none; }
+    .masthead { position: static; }
+
+    #split {
+      display: flex; align-items: center; justify-content: center;
+      height: 22px; background: var(--bg);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      cursor: row-resize;
+      touch-action: none; /* ドラッグがページのスクロールに化けるのを防ぐ */
+    }
+    #split::before {
+      content: ""; width: 44px; height: 4px; border-radius: 2px;
+      background: var(--line-2); transition: background .12s;
+    }
+    #split:active::before, #split:focus-visible::before { background: var(--ink-3); }
+  }
+
+  /* ドラッグ中に地図や文字が選択されると操作が途切れる */
+  body.resizing { user-select: none; -webkit-user-select: none; }
+  body.resizing #map { pointer-events: none; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <header class="masthead">
+    <!-- 三つ折りの地図。小さく置いても地図とわかる形を優先した。 -->
+    <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
+      <rect width="32" height="32" rx="7" fill="#17191d" />
+      <path d="M4 10.5 12 7.5 20 10.5 28 7.5v14L20 24.5 12 21.5 4 24.5z" fill="#fff" />
+      <path d="M12 7.5v14M20 10.5v14" stroke="#17191d" stroke-width="1.4" />
+    </svg>
+    <div>
+      <h1>Timeline Visualizer</h1>
+      <p class="sub">Google マップのタイムラインを地図で描く</p>
+    </div>
+  </header>
+
+  <section>
+    <div id="drop">
+      <strong>JSON をドロップ</strong>
+      またはクリックしてファイルを選択
+    </div>
+    <input type="file" id="file" accept=".json,application/json" />
+    <div id="status"></div>
+    <div class="privacy">
+      <p>外部とやりとりするのは、<b>地図を表示するときだけ</b>です。</p>
+      <dl>
+        <dt>タイムライン</dt>
+        <dd>お使いの端末の中だけで処理します。外部に送られることも、保存されることもありません。</dd>
+        <dt>地図</dt>
+        <dd>表示に必要な分をインターネットから読み込みます。</dd>
+      </dl>
+    </div>
+    <details class="howto">
+      <summary>タイムラインの書き出し方</summary>
+      <h3>iPhone</h3>
+      <p>Google マップアプリ →&nbsp;プロフィール写真 →&nbsp;設定 →&nbsp;個人的なコンテンツ →&nbsp;<b>タイムライン データをエクスポート</b> →&nbsp;ファイルに保存</p>
+      <h3>Android</h3>
+      <p>マップアプリではなく<b>端末の設定</b>から。設定 →&nbsp;位置情報 →&nbsp;位置情報サービス →&nbsp;タイムライン →&nbsp;<b>タイムライン データをエクスポート</b> →&nbsp;続行 →&nbsp;保存先を選ぶ</p>
+      <p class="note">保存されるのは location-history.json です。項目名は端末や時期によって多少異なる場合があります。</p>
+    </details>
+  </section>
+
+  <section id="range-section" class="disabled">
+    <h2>期間</h2>
+    <div class="row">
+      <div><label for="from">開始</label><input type="date" id="from" /></div>
+      <div><label for="to">終了</label><input type="date" id="to" /></div>
+    </div>
+    <div class="presets">
+      <button data-preset="7">7日</button>
+      <button data-preset="30">30日</button>
+      <button data-preset="365">1年</button>
+      <button data-preset="all">全期間</button>
+    </div>
+  </section>
+
+  <section id="stats-section" class="disabled">
+    <h2>統計</h2>
+    <div class="stats">
+      <div class="stat"><div class="k">移動距離</div><div class="v" id="s-dist">–</div></div>
+      <div class="stat"><div class="k">移動時間</div><div class="v" id="s-time">–</div></div>
+      <div class="stat"><div class="k">経路</div><div class="v" id="s-tracks">–</div></div>
+      <div class="stat"><div class="k">地点数</div><div class="v" id="s-points">–</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>移動手段</h2>
+    <div class="legend">
+      <div><span class="swatch" style="background:var(--walk)"></span>徒歩・ランニング<b id="d-walk">–</b></div>
+      <div><span class="swatch" style="background:var(--bike)"></span>自転車<b id="d-bike">–</b></div>
+      <div><span class="swatch" style="background:var(--car)"></span>自動車・バイク<b id="d-car">–</b></div>
+      <div><span class="swatch" style="background:var(--transit)"></span>電車・バス<b id="d-transit">–</b></div>
+      <div><span class="swatch" style="background:var(--air)"></span>飛行機・船<b id="d-air">–</b></div>
+      <div><span class="swatch" style="background:var(--other)"></span>その他・不明<b id="d-other">–</b></div>
+      <div><span class="swatch dashed"></span>記録が途切れた区間<b>破線</b></div>
+    </div>
+  </section>
+
+  <section id="player-section" class="disabled">
+    <h2>再生</h2>
+    <div class="player">
+      <button id="play" disabled aria-label="再生"></button>
+      <input type="range" id="seek" min="0" max="1000" value="0" disabled aria-label="再生位置" />
+    </div>
+    <div id="clock"></div>
+    <div class="field">
+      <label for="speed">速度</label>
+      <select id="speed">
+        <option value="60">1分 / 秒</option>
+        <option value="600">10分 / 秒</option>
+        <option value="3600" selected>1時間 / 秒</option>
+        <option value="21600">6時間 / 秒</option>
+        <option value="86400">1日 / 秒</option>
+        <option value="604800">1週間 / 秒</option>
+      </select>
+    </div>
+    <div class="checks" style="margin-top:14px">
+      <label class="check"><input type="checkbox" id="skip" checked />30分以上の停止を飛ばす</label>
+      <label class="check"><input type="checkbox" id="follow" />再生中に現在地を追う</label>
+      <label class="check"><input type="checkbox" id="hold" checked />縮尺の変更中は再生を止める</label>
+    </div>
+    <p class="hint">追尾中は移動手段と再生倍率で縮尺が決まります。地図を操作すると解除されます。</p>
+  </section>
+
+  <section id="options-section" class="disabled">
+    <h2>表示</h2>
+    <div class="checks">
+      <label class="check"><input type="checkbox" id="smooth" checked />ポイント間をなめらかにする</label>
+      <label class="check"><input type="checkbox" id="despike" checked />計測誤差の点を除去する</label>
+      <label class="check"><input type="checkbox" id="connect" checked />途切れた区間を点線でつなぐ</label>
+    </div>
+  </section>
+
+  <section id="edit-section" class="disabled">
+    <h2>移動手段の修正</h2>
+    <p class="hint" style="margin-top:0">地図上の経路をクリックすると移動手段を変更できます。</p>
+    <button id="export" class="wide" disabled>修正はまだありません</button>
+  </section>
+
+  <footer>
+    地図 © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors ・
+    タイル <a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a>
+  </footer>
+</div>
+
+<div id="map"></div>
+
+<!-- 狭い画面でだけ現れる、地図と操作パネルの境界。上下にドラッグして比率を変える。 -->
+<div id="split" role="separator" aria-orientation="horizontal" tabindex="0"
+     aria-label="地図と操作パネルの高さの比率" aria-valuemin="0" aria-valuemax="100"></div>
+
+<script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script>
+"use strict";
+
+/* ============================================================
+ * 設定
+ * ============================================================ */
+
+// タイル提供元。OpenFreeMap は APIキー不要・リクエスト無制限。
+// 将来 Protomaps(PMTiles) 等へ移す場合もここ 1 行の差し替えで済む。
+const MAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
+
+// 描画する地点数の上限。超えると距離ベースで間引く。
+const MAX_POINTS = 50000;
+
+// 配色は CSS の :root だけが持つ。凡例(CSS)と地図(JS)で二重管理すると
+// 片方だけ直したときに食い違うため、ここで読み出して揃える。
+const CATEGORY_COLOR = (() => {
+  const css = getComputedStyle(document.documentElement);
+  const read = (name) => css.getPropertyValue("--" + name).trim();
+  return {
+    walk: read("walk"), bike: read("bike"), car: read("car"),
+    transit: read("transit"), air: read("air"), other: read("other"),
+  };
+})();
+
+// Google の activity type → 凡例のカテゴリ
+const CATEGORY_OF_TYPE = {
+  WALKING: "walk", ON_FOOT: "walk", RUNNING: "walk", HIKING: "walk",
+  CYCLING: "bike", IN_BICYCLE: "bike",
+  IN_PASSENGER_VEHICLE: "car", IN_VEHICLE: "car", MOTORCYCLING: "car", DRIVING: "car",
+  IN_TAXI: "car", IN_AUTOMOTIVE_VEHICLE: "car",
+  IN_TRAIN: "transit", IN_SUBWAY: "transit", IN_TRAM: "transit", IN_BUS: "transit",
+  IN_FUNICULAR: "transit",
+  FLYING: "air", IN_FERRY: "air", SAILING: "air",
+};
+
+const categoryOf = (type) => CATEGORY_OF_TYPE[type] || "other";
+const CATEGORIES = ["walk", "bike", "car", "transit", "air", "other"];
+
+const CATEGORY_LABEL = {
+  walk: "徒歩", bike: "自転車", car: "自動車", transit: "電車・バス",
+  air: "飛行機・船", other: "その他",
+};
+
+// 通常の経路レイヤーと再生済みレイヤーで同じ配色を使う。
+// 再生済みを単色で塗ると移動手段の色分けが消えてしまうため。
+const LINE_COLOR = [
+  "match", ["get", "category"],
+  "walk", CATEGORY_COLOR.walk,
+  "bike", CATEGORY_COLOR.bike,
+  "car", CATEGORY_COLOR.car,
+  "transit", CATEGORY_COLOR.transit,
+  "air", CATEGORY_COLOR.air,
+  CATEGORY_COLOR.other,
+];
+
+const ROUTE_WIDTH = ["interpolate", ["linear"], ["zoom"], 4, 1.2, 10, 2.4, 16, 5];
+const TRAVELED_WIDTH = ["interpolate", ["linear"], ["zoom"], 4, 2.5, 10, 4, 16, 7];
+
+/* ------------------------------------------------------------
+ * 計測誤差(飛び値)の除去
+ *
+ * GPS は時折まったく別の場所を1点だけ返す。そのまま線で結ぶと
+ * 画面外まで往復する巨大なヒゲになるため、経路に載せる前に落とす。
+ * ------------------------------------------------------------ */
+
+const MAX_SPEED_MPS = 340;  // 約1,224km/h。旅客機の巡航を超える移動は誤差とみなす
+const SPIKE_MIN_M   = 200;  // これ未満のブレは通常の GPS ノイズなので触らない
+const SPIKE_RATIO   = 0.35; // 「飛んで戻る」形とみなす prev→next / prev→cur の比
+
+function tooFast(prev, cur) {
+  const d = haversine(prev, cur);
+  if (d < SPIKE_MIN_M) return false;
+  const dt = (cur.t - prev.t) / 1000;
+  if (dt <= 0) return false; // 時刻が無いデータもあるので、速度では判定しない
+  return d / dt > MAX_SPEED_MPS;
+}
+
+/** prev から大きく離れ、しかも next で元へ戻る = その1点だけが飛んでいる */
+function isSpike(prev, cur, next) {
+  const out = haversine(prev, cur);
+  const back = haversine(cur, next);
+  if (out < SPIKE_MIN_M || back < SPIKE_MIN_M) return false;
+  return haversine(prev, next) < SPIKE_RATIO * Math.min(out, back);
+}
+
+function despike(points) {
+  if (points.length < 3) return { points, removed: 0 };
+  const out = [points[0]];
+  let dropped = 0;
+  for (let i = 1; i < points.length - 1; i++) {
+    const prev = out[out.length - 1];
+    // 2 点続けて弾かれたら、それは飛び値ではなく実際にその場所へ
+    // 移動している(GPS が長く切れて別の場所で復帰した等)。基準点を進める。
+    if (dropped < 2 && (tooFast(prev, points[i]) || isSpike(prev, points[i], points[i + 1]))) {
+      dropped++;
+      continue;
+    }
+    dropped = 0;
+    out.push(points[i]);
+  }
+  // 終端は比較対象が無いので速度だけで判定する(2点は必ず残す)
+  const last = points[points.length - 1];
+  if (out.length < 2 || !tooFast(out[out.length - 1], last)) out.push(last);
+  return { points: out, removed: points.length - out.length };
+}
+
+/* ============================================================
+ * パーサー: 生 JSON → 内部モデル
+ *
+ * 生の形式に依存するのはこのブロックだけ。以降は tracks / visits
+ * という正規化済みのモデルしか触らない。
+ * ============================================================ */
+
+/**
+ * 座標文字列を [lat, lng] に。Google は形式が揺れるため、
+ * 文字列から最初の 2 つの数値を抜くという方針で吸収する。
+ *   "35.6812°, 139.7671°"  (Android)
+ *   "geo:35.6812,139.7671" (iOS)
+ */
+function parseLatLng(str) {
+  if (typeof str !== "string") return null;
+  const m = str.match(/-?\d+(?:\.\d+)?/g);
+  if (!m || m.length < 2) return null;
+  const lat = parseFloat(m[0]), lng = parseFloat(m[1]);
+  if (!isFinite(lat) || !isFinite(lng)) return null;
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return [lat, lng];
+}
+
+function parseTime(str) {
+  if (!str) return null;
+  const t = new Date(str).getTime();
+  return isFinite(t) ? t : null;
+}
+
+/**
+ * semanticSegments の配列部分だけを文字列として切り出す。
+ *
+ * エクスポートの大半は rawSignals(生の GPS・WiFi スキャン)が占めていて、
+ * このツールでは一切使わない。丸ごと JSON.parse するとその分の時間と
+ * メモリを捨てることになるため、必要な配列だけを先に取り出す。
+ * 文字列走査なのでオブジェクト生成が発生せず、パースより桁違いに軽い。
+ * 見つからなければ null を返し、呼び出し側が全体をパースする。
+ */
+function sliceSemanticSegments(text) {
+  const key = '"semanticSegments"';
+  const at = text.indexOf(key);
+  if (at < 0) return null;
+
+  let start = -1;
+  for (let i = at + key.length; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c === 91) { start = i; break; }        // '['
+    if (c !== 32 && c !== 9 && c !== 10 && c !== 13 && c !== 58) return null; // 空白と ':' 以外
+  }
+  if (start < 0) return null;
+
+  // 文字列リテラルの中の括弧を数えないよう、エスケープを見ながら走査する
+  let depth = 0, inStr = false, esc = false;
+  for (let i = start; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (inStr) {
+      if (esc) esc = false;
+      else if (c === 92) esc = true;            // '\'
+      else if (c === 34) inStr = false;         // '"'
+      continue;
+    }
+    if (c === 34) inStr = true;
+    else if (c === 91) depth++;                 // '['
+    else if (c === 93 && --depth === 0) return text.slice(start, i + 1); // ']'
+  }
+  return null;
+}
+
+/**
+ * timelinePath を移動手段ごとに切り分ける。
+ *
+ * Google は経路を 2 時間ごとの塊で記録する一方、移動手段はそれとは別の
+ * セグメントに、実際の移動の区切りで記録する。1 つの塊の中に徒歩と自動車が
+ * 混在することは珍しくない(手元のデータでは約半分がそうだった)。
+ *
+ * 塊ごとに 1 つの手段を選んでしまうと、中の短い移動が塗り潰されて消える。
+ * タイムライン上で直した移動手段も、その塊で最長の移動でなければ地図に
+ * 出てこない。そこで点ごとに移動手段を決め、切り替わる所で経路を分ける。
+ */
+function splitByActivity(path, overlapping, timed) {
+  // その時刻を含む activity。無ければ時間的に最も近いものへ寄せる
+  // (滞在中の点などどの移動にも属さない点を、その都度「不明」にしないため)
+  const pick = (t) => {
+    let best = -1, bestGap = Infinity;
+    for (const i of overlapping) {
+      const a = timed[i];
+      const gap = t < a.start ? a.start - t : (t > a.end ? t - a.end : 0);
+      if (gap < bestGap) { bestGap = gap; best = i; }
+    }
+    return best;
+  };
+
+  const points = path.points;
+  const parts = [];
+  const emit = (from, to, act) => {
+    const pts = points.slice(from, to);
+    if (pts.length < 2) return; // 区切りの点は前の区間にも入っているので落として良い
+    const a = act >= 0 ? timed[act] : null;
+    const type = path.type || (a ? a.type : null);
+    parts.push({
+      start: pts[0].t, end: pts[pts.length - 1].t, points: pts,
+      // 書き戻す先は移動手段を持っているセグメント。timelinePath 側に書くと
+      // その 2 時間がまるごと 1 つの手段になってしまう。
+      seg: path.seg, actSeg: a ? a.seg : null,
+      type: type || null, category: categoryOf(type),
+    });
+  };
+
+  let from = 0, act = pick(points[0].t);
+  for (let i = 1; i < points.length; i++) {
+    const next = pick(points[i].t);
+    if (next === act) continue;
+    emit(from, i + 1, act); // 区切りの点は次の区間の始点でもある(線を途切れさせない)
+    from = i;
+    act = next;
+  }
+  emit(from, points.length, act);
+  return parts;
+}
+
+function parseTimeline(json) {
+  // ルートが配列の変種と、{ semanticSegments: [...] } の両方を受ける
+  const segments = Array.isArray(json) ? json : (json && json.semanticSegments);
+  if (!Array.isArray(segments)) {
+    throw new Error("semanticSegments が見つかりません。スマホの Google マップアプリから書き出した location-history.json を選んでください。");
+  }
+
+  const paths = [];      // timelinePath を持つセグメント
+  const activities = []; // 移動手段のメタ情報
+  const visits = [];
+  let skipped = 0;
+
+  segments.forEach((seg, segIndex) => {
+    if (!seg || typeof seg !== "object") { skipped++; return; }
+    const start = parseTime(seg.startTime);
+    const end = parseTime(seg.endTime) ?? start;
+
+    // activity は timelinePath と同じセグメントに同居することが多い。
+    // 先に読んでおかないと移動手段が取れず、すべて「その他」になる。
+    const ownType = (seg.activity && seg.activity.topCandidate && seg.activity.topCandidate.type) || null;
+
+    if (Array.isArray(seg.timelinePath) && seg.timelinePath.length) {
+      const points = [];
+      for (const p of seg.timelinePath) {
+        const ll = parseLatLng(p && p.point);
+        if (!ll) continue;
+        // time が無く durationMinutesOffsetFromStartTime だけの変種がある
+        let t = parseTime(p.time);
+        if (t === null && start !== null && p.durationMinutesOffsetFromStartTime != null) {
+          t = start + Number(p.durationMinutesOffsetFromStartTime) * 60000;
+        }
+        points.push({ lat: ll[0], lng: ll[1], t: t ?? start ?? 0 });
+      }
+      if (points.length >= 2) {
+        points.sort((a, b) => a.t - b.t);
+        paths.push({
+          start: start ?? points[0].t,
+          end: end ?? points[points.length - 1].t,
+          points,
+          type: ownType,
+          seg: segIndex,
+        });
+      } else {
+        skipped++;
+      }
+      return;
+    }
+
+    if (seg.activity) {
+      const a = seg.activity;
+      const s = parseLatLng(a.start && a.start.latLng);
+      const e = parseLatLng(a.end && a.end.latLng);
+      activities.push({ start, end, type: ownType, s, e, seg: segIndex });
+      return;
+    }
+
+    if (seg.visit) {
+      const c = (seg.visit.topCandidate) || {};
+      const ll = parseLatLng(c.placeLocation && c.placeLocation.latLng);
+      if (ll) {
+        visits.push({
+          start, end, lat: ll[0], lng: ll[1],
+          placeId: c.placeId || null,
+          semanticType: c.semanticType || null,
+        });
+      }
+      return;
+    }
+
+    skipped++;
+  });
+
+  // 経路と時間が重なる activity を探す。activities は数万件になりうるので
+  // 日付バケットで候補を絞る(総当たりだと件数の二乗になる)。
+  const timed = activities.filter((a) => a.start !== null && a.end !== null);
+  const actByDay = bucketByDay(timed, (a) => a.start, (a) => a.end);
+
+  const tracks = [];
+  const usedActivity = new Set();
+  for (const p of paths) {
+    const candidates = new Set();
+    eachDay(p.start, p.end, (key) => {
+      for (const i of actByDay.get(key) || []) candidates.add(i);
+    });
+
+    const overlapping = [];
+    for (const i of candidates) {
+      const a = timed[i];
+      if (Math.min(p.end, a.end) - Math.max(p.start, a.start) <= 0) continue;
+      // 経路が既に自前の移動手段を持っていても「使用済み」にする。ここを
+      // 飛ばすと、同じ移動が後段で始点→終点の直線として二重に描かれる。
+      usedActivity.add(i);
+      overlapping.push(i);
+    }
+
+    for (const part of splitByActivity(p, overlapping, timed)) tracks.push(part);
+  }
+
+  // どの経路とも重ならない activity だけを start→end の直線で補完する
+  timed.forEach((a, i) => {
+    if (usedActivity.has(i) || !a.s || !a.e) return;
+    tracks.push({
+      start: a.start, end: a.end, type: a.type, category: categoryOf(a.type),
+      seg: a.seg, straight: true,
+      points: [
+        { lat: a.s[0], lng: a.s[1], t: a.start },
+        { lat: a.e[0], lng: a.e[1], t: a.end },
+      ],
+    });
+  });
+
+  // 時刻が壊れている経路を落とす。1 件でも epoch 0 が混ざると期間の下限が
+  // 1970 年に引きずられ、日付索引が無意味に肥大化するため。
+  const valid = tracks.filter(
+    (t) => isFinite(t.start) && isFinite(t.end) && t.start > 0 && t.end >= t.start
+  );
+  skipped += tracks.length - valid.length;
+
+  valid.sort((a, b) => a.start - b.start);
+  visits.sort((a, b) => a.start - b.start);
+  // 地図上でクリックされた線から経路を引けるよう、安定した番号を振る
+  valid.forEach((t, i) => { t.id = i; });
+
+  return { tracks: valid, visits, skipped, segments };
+}
+
+/* ============================================================
+ * 日付索引 / 絞り込み
+ * ============================================================ */
+
+const pad2 = (n) => String(n).padStart(2, "0");
+const dayKey = (ms) => {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+};
+
+/** startMs〜endMs が掛かる各日の 'YYYY-MM-DD' を順に渡す */
+function eachDay(startMs, endMs, cb) {
+  const DAY = 86400000;
+  let cursor = new Date(startMs);
+  cursor.setHours(0, 0, 0, 0);
+  let guard = 0;
+  while (cursor.getTime() <= endMs && guard++ < 400) {
+    cb(dayKey(cursor.getTime()));
+    cursor = new Date(cursor.getTime() + DAY);
+    cursor.setHours(0, 0, 0, 0);
+  }
+}
+
+/** 値を日付ごとのバケットに積む。日をまたぐものは該当する全ての日に入る。 */
+function bucketByDay(items, getStart, getEnd) {
+  const index = new Map();
+  items.forEach((item, i) => {
+    eachDay(getStart(item), getEnd(item), (key) => {
+      if (!index.has(key)) index.set(key, []);
+      index.get(key).push(i);
+    });
+  });
+  return index;
+}
+
+/** 'YYYY-MM-DD' がそのまま辞書順で比較できるので、範囲判定は文字列比較で足りる */
+function buildDayIndex(tracks) {
+  return bucketByDay(tracks, (t) => t.start, (t) => t.end);
+}
+
+function filterTracks(tracks, dayIndex, fromKey, toKey) {
+  const seen = new Set();
+  for (const [key, ids] of dayIndex) {
+    if (key < fromKey || key > toKey) continue;
+    for (const id of ids) seen.add(id);
+  }
+  return [...seen].sort((a, b) => a - b).map((i) => tracks[i]);
+}
+
+/* ============================================================
+ * 間引き / 幾何計算
+ * ============================================================ */
+
+function haversine(a, b) {
+  const R = 6371000, rad = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * rad, dLng = (b.lng - a.lng) * rad;
+  const la1 = a.lat * rad, la2 = b.lat * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/** 度単位の二乗距離。間引き判定にしか使わないので厳密でなくてよい */
+const roughSq = (a, b) => (a.lat - b.lat) ** 2 + ((a.lng - b.lng) * Math.cos(a.lat * Math.PI / 180)) ** 2;
+
+/**
+ * 直前に採用した点から一定距離未満の点を捨てる。閾値を段階的に上げ、
+ * MAX_POINTS を下回った時点で採用する。各経路の始点と終点は必ず残す。
+ */
+function thin(tracks) {
+  let total = 0;
+  for (const t of tracks) total += t.points.length;
+  if (total <= MAX_POINTS) return { tracks, total, thinned: false };
+
+  const METERS_PER_DEG = 111320;
+  for (const meters of [10, 25, 50, 100, 250, 500, 1000, 2500]) {
+    const minSq = (meters / METERS_PER_DEG) ** 2;
+    const out = [];
+    let count = 0;
+    for (const t of tracks) {
+      const pts = [t.points[0]];
+      for (let i = 1; i < t.points.length - 1; i++) {
+        if (roughSq(pts[pts.length - 1], t.points[i]) >= minSq) pts.push(t.points[i]);
+      }
+      pts.push(t.points[t.points.length - 1]);
+      count += pts.length;
+      out.push({ ...t, points: pts });
+    }
+    if (count <= MAX_POINTS) return { tracks: out, total: count, thinned: true, original: total };
+  }
+  return { tracks, total, thinned: false };
+}
+
+/* ============================================================
+ * なめらか化
+ *
+ * Chaikin のコーナーカット。各辺の 1/4 と 3/4 の点で角を落とす操作を
+ * 繰り返す。生成される点が必ず元の折れ線の凸包に収まるので、実際には
+ * 通っていない場所へ線が膨らむことがない(スプライン補間との違い)。
+ * ============================================================ */
+
+function chaikin(coords, iterations) {
+  let pts = coords;
+  for (let it = 0; it < iterations; it++) {
+    if (pts.length < 3) break;
+    const out = [pts[0]];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i], b = pts[i + 1];
+      out.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25]);
+      out.push([a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]);
+    }
+    out.push(pts[pts.length - 1]);
+    pts = out;
+  }
+  return pts;
+}
+
+/**
+ * 反復ごとに点数が約2倍になるため、総点数から回数を決める。
+ * 0 を返したときはなめらか化しない。
+ */
+function smoothIterations(totalPoints) {
+  if (!smoothEl.checked) return 0;
+  if (totalPoints > 40000) return 1;
+  if (totalPoints > 8000) return 2;
+  return 3;
+}
+
+/* ============================================================
+ * 表示フォーマット
+ * ============================================================ */
+
+function fmtDistance(m) {
+  if (m >= 1000) return (m / 1000).toLocaleString("ja-JP", { maximumFractionDigits: m >= 100000 ? 0 : 1 }) + " km";
+  return Math.round(m) + " m";
+}
+
+function fmtDuration(ms) {
+  const h = Math.floor(ms / 3600000), m = Math.round((ms % 3600000) / 60000);
+  if (h >= 24) return Math.floor(h / 24) + "日 " + (h % 24) + "時間";
+  if (h) return h + "時間 " + m + "分";
+  return m + "分";
+}
+
+const fmtClock = new Intl.DateTimeFormat("ja-JP", {
+  year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit",
+});
+
+/* ============================================================
+ * 地図
+ * ============================================================ */
+
+const map = new maplibregl.Map({
+  container: "map",
+  style: MAP_STYLE,
+  center: [139.7671, 35.6812],
+  zoom: 9,
+  attributionControl: { compact: false },
+});
+map.addControl(new maplibregl.NavigationControl(), "top-right");
+map.addControl(new maplibregl.ScaleControl(), "bottom-left");
+
+const EMPTY = { type: "FeatureCollection", features: [] };
+
+const mapReady = new Promise((resolve) => {
+  map.on("load", () => {
+    map.addSource("routes", { type: "geojson", data: EMPTY });
+    map.addSource("gaps", { type: "geojson", data: EMPTY });
+    map.addSource("traveled", { type: "geojson", data: EMPTY });
+    map.addSource("traveled-gaps", { type: "geojson", data: EMPTY });
+    map.addSource("head", { type: "geojson", data: EMPTY });
+
+    // 記録された経路と同じ色・同じ太さで、破線だけを変える。
+    // 通った道は分からないが、その移動の一部であることは同じなので。
+    map.addLayer({
+      id: "gaps-line",
+      type: "line",
+      source: "gaps",
+      layout: { "line-cap": "butt", "line-join": "round" },
+      paint: {
+        "line-color": LINE_COLOR,
+        "line-width": ROUTE_WIDTH,
+        "line-dasharray": [2, 2],
+        "line-opacity": 0.85,
+      },
+    });
+
+    map.addLayer({
+      id: "routes-line",
+      type: "line",
+      source: "routes",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": LINE_COLOR,
+        "line-width": ROUTE_WIDTH,
+        "line-opacity": 0.85,
+      },
+    });
+
+    map.addLayer({
+      id: "traveled-gaps-line",
+      type: "line",
+      source: "traveled-gaps",
+      layout: { "line-cap": "butt", "line-join": "round" },
+      paint: {
+        "line-color": LINE_COLOR,
+        "line-width": TRAVELED_WIDTH,
+        "line-dasharray": [2, 2],
+        "line-opacity": 0,
+      },
+    });
+
+    map.addLayer({
+      id: "traveled-line",
+      type: "line",
+      source: "traveled",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": LINE_COLOR,
+        "line-width": TRAVELED_WIDTH,
+        "line-opacity": 0,
+      },
+    });
+
+    map.addLayer({
+      id: "head-circle",
+      type: "circle",
+      source: "head",
+      paint: {
+        "circle-radius": 7,
+        "circle-color": "#17191d",
+        "circle-stroke-width": 2.5,
+        "circle-stroke-color": "#ffffff",
+        "circle-opacity": 0,
+        "circle-stroke-opacity": 0,
+      },
+    });
+
+    resolve();
+  });
+});
+
+/* ------------------------------------------------------------
+ * 途切れた区間の接続
+ *
+ * 経路と経路の間は記録が無い。GPS が切れていた区間では終点と次の始点が
+ * 離れ、線が途切れて見える。ここを直線でつなぐが、記録された経路とは
+ * 区別できるよう点線で描く(実際にその道を通った証拠は無いため)。
+ * ------------------------------------------------------------ */
+
+const MIN_GAP_M = 50; // これ未満なら既に繋がって見える
+
+// 空白を挟んで良い最長の時間。飛行機は乗り継ぎで長く空くので広く取る。
+const HOUR = 3600 * 1000;
+const CATEGORY_MAX_GAP = {
+  walk: 6 * HOUR, bike: 6 * HOUR, car: 12 * HOUR,
+  transit: 12 * HOUR, air: 48 * HOUR, other: 12 * HOUR,
+};
+
+// その手段で出せる上限の速度 (m/s)。これを超える空白は移動では説明できない。
+const CATEGORY_MAX_SPEED = {
+  walk: 3, bike: 12, car: 45, transit: 100, air: 320, other: 45,
+};
+
+/** 空白の前後のうち、速い方の手段を返す */
+function fasterCategory(a, b) {
+  return (CATEGORY_SPEED[a] ?? 0) >= (CATEGORY_SPEED[b] ?? 0) ? a : b;
+}
+
+/**
+ * 経路と経路の間の空白を、つなげるものだけ経路番号の位置に入れて返す。
+ * 判定には距離と時間だけでなく前後の移動手段も使う。飛行機の前後が徒歩でも
+ * 空白を埋めたのは飛行機なので、徒歩の基準で切ってはいけない。
+ */
+function buildGaps(tracks) {
+  const bySpan = new Array(tracks.length).fill(null);
+  for (let i = 1; i < tracks.length; i++) {
+    const prev = tracks[i - 1], cur = tracks[i];
+    const a = prev.points[prev.points.length - 1];
+    const b = cur.points[0];
+
+    const idle = cur.start - prev.end;
+    if (idle < 0) continue;
+    const dist = haversine(a, b);
+    if (dist < MIN_GAP_M) continue;
+
+    const judge = fasterCategory(prev.category, cur.category);
+    if (idle > (CATEGORY_MAX_GAP[judge] ?? CATEGORY_MAX_GAP.other)) continue;
+
+    const seconds = idle / 1000;
+    // その手段でも届かない距離なら、移動ではなく記録の欠落として扱う
+    if (seconds > 0 && dist / seconds > (CATEGORY_MAX_SPEED[judge] ?? CATEGORY_MAX_SPEED.other)) continue;
+
+    // 色は直後の手段に合わせる(その空白はこれから始まる移動の一部として読める)
+    bySpan[i] = { category: cur.category, coords: [[a.lng, a.lat], [b.lng, b.lat]] };
+  }
+  return bySpan;
+}
+
+function gapsToGeoJSON(bySpan) {
+  const features = [];
+  for (const gap of bySpan) {
+    if (!gap) continue;
+    features.push({
+      type: "Feature",
+      properties: { category: gap.category },
+      geometry: { type: "LineString", coordinates: gap.coords },
+    });
+  }
+  return { type: "FeatureCollection", features };
+}
+
+/**
+ * 再生で到達した空白。渡り終えたものは全体を、いま渡っている最中のものは
+ * 現在地までを描く。空白の上でも現在地は進むので、点線もそれに合わせて伸ばす。
+ */
+function traveledGapsGeoJSON(t) {
+  const crossing = crossingGapSpan();
+  const features = [];
+  state.gaps.forEach((gap, span) => {
+    // 次の経路の点が 1 つでも積まれていれば、その空白は渡り終えている
+    const done = anim.coords[span] && anim.coords[span].length > 0;
+    if (!gap || (!done && span !== crossing)) return;
+    features.push({
+      type: "Feature",
+      properties: { category: gap.category },
+      geometry: {
+        type: "LineString",
+        coordinates: done ? gap.coords : [gap.coords[0], headPosition(t)],
+      },
+    });
+  });
+  return { type: "FeatureCollection", features };
+}
+
+function tracksToGeoJSON(tracks, iterations) {
+  return {
+    type: "FeatureCollection",
+    features: tracks.map((t) => {
+      let coords = t.points.map((p) => [p.lng, p.lat]);
+      // 2点しかない直線は activity から補完したもので、実際の経路ではない。
+      // なめらか化しても意味が無いのでそのまま描く。
+      if (iterations && !t.straight) coords = chaikin(coords, iterations);
+      return {
+        type: "Feature",
+        properties: { category: t.category, type: t.type || "UNKNOWN", id: t.id },
+        geometry: { type: "LineString", coordinates: coords },
+      };
+    }),
+  };
+}
+
+/** 再生表示の切り替え。全体経路を薄くし、走破済みと現在地を出す。 */
+function setPlaybackView(on) {
+  map.setPaintProperty("routes-line", "line-opacity", on ? 0.22 : 0.85);
+  map.setPaintProperty("gaps-line", "line-opacity", on ? 0.22 : 0.85);
+  map.setPaintProperty("traveled-line", "line-opacity", on ? 0.95 : 0);
+  map.setPaintProperty("traveled-gaps-line", "line-opacity", on ? 0.95 : 0);
+  map.setPaintProperty("head-circle", "circle-opacity", on ? 1 : 0);
+  map.setPaintProperty("head-circle", "circle-stroke-opacity", on ? 1 : 0);
+}
+
+function boundsOf(tracks) {
+  const b = new maplibregl.LngLatBounds();
+  for (const t of tracks) for (const p of t.points) b.extend([p.lng, p.lat]);
+  return b.isEmpty() ? null : b;
+}
+
+/* ============================================================
+ * 状態
+ * ============================================================ */
+
+const state = {
+  tracks: [],      // 全データ
+  dayIndex: null,
+  minDay: null,
+  maxDay: null,
+  view: [],        // 絞り込み + 間引き済み
+  gaps: [],        // 経路番号ごとの、直前の経路との空白をつなぐ線
+  segments: [],    // 読み込んだ元データ。書き出しのために保持する
+  edits: new Set(),// 移動手段を書き換えたセグメントの番号
+  removed: 0,      // 計測誤差として除去した地点数
+  smooth: 0,       // なめらか化の反復回数
+  flat: [],        // 再生用に時刻順へ平坦化した地点列
+  spanOf: null,    // flat の index → 何番目の経路か (Uint32Array)
+  spanCount: 0,
+  spanCategory: [],
+};
+
+const anim = {
+  playing: false,
+  t0: 0, t1: 0,     // 再生範囲(実時刻 ms)
+  t: 0,             // 現在の仮想時刻
+  raf: null,
+  lastFrame: 0,
+  lastDraw: 0,
+  index: 0,         // flat 上の現在位置
+  coords: [],       // 走破済みの座標列(経路ごとの配列)
+  zoom: 12,         // 追尾中の現在のズーム
+  zoomFrom: 12,     // 遷移の開始値
+  zoomTo: 12,       // 遷移の目標値
+  zoomAt: 0,        // 遷移を始めた時刻(0 なら遷移していない)
+  span: -1,         // 追尾中に見ている経路。変わったら縮尺を取り直す
+};
+
+/* ============================================================
+ * DOM
+ * ============================================================ */
+
+const $ = (id) => document.getElementById(id);
+const drop = $("drop"), fileInput = $("file"), statusEl = $("status");
+const fromEl = $("from"), toEl = $("to");
+const playBtn = $("play"), seekEl = $("seek"), speedEl = $("speed"), clockEl = $("clock");
+const smoothEl = $("smooth"), despikeEl = $("despike"), followEl = $("follow"), connectEl = $("connect");
+const skipEl = $("skip"), holdEl = $("hold"), exportBtn = $("export");
+
+function setStatus(msg, isError) {
+  statusEl.textContent = msg || "";
+  statusEl.classList.toggle("error", !!isError);
+}
+
+function enable(id, on) { $(id).classList.toggle("disabled", !on); }
+
+/* ---- 読み込み ---- */
+
+drop.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", (e) => {
+  if (e.target.files[0]) loadFile(e.target.files[0]);
+});
+["dragenter", "dragover"].forEach((ev) =>
+  drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); })
+);
+["dragleave", "drop"].forEach((ev) =>
+  drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); })
+);
+drop.addEventListener("drop", (e) => {
+  const f = e.dataTransfer.files[0];
+  if (f) loadFile(f);
+});
+
+function updateExportButton() {
+  const n = state.edits.size;
+  exportBtn.disabled = n === 0;
+  exportBtn.textContent = n ? `${n} 件の修正を含めて書き出す` : "修正はまだありません";
+}
+
+/**
+ * 読み込んだセグメントをそのまま書き出す。rawSignals と
+ * userLocationProfile は読み込み時に読み飛ばしているので含まれない
+ * (このツールでは使わないため)。書き出したファイルは読み直せる。
+ */
+function exportJSON() {
+  const text = JSON.stringify({ semanticSegments: state.segments });
+  const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "timeline-edited.json";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/** 進捗を出し、ブラウザに描画の機会を渡してから次の処理へ進む */
+function tick(message) {
+  setStatus(message);
+  return new Promise((r) => setTimeout(r, 16));
+}
+
+async function loadFile(file) {
+  stopAnimation();
+  await tick(`読み込み中… (${(file.size / 1048576).toFixed(1)} MB)`);
+
+  let parsed;
+  try {
+    const text = await file.text();
+    await tick(`解析中… (${(text.length / 1048576).toFixed(1)} MB)`);
+
+    // 使わない rawSignals を避けられれば、大きなファイルほど効く
+    const slice = sliceSemanticSegments(text);
+    await tick("経路を構築中…");
+    parsed = parseTimeline(JSON.parse(slice ?? text));
+  } catch (err) {
+    setStatus(err instanceof SyntaxError ? "JSON として読めませんでした。" : err.message, true);
+    return;
+  }
+
+  if (!parsed.tracks.length) {
+    setStatus("移動経路が 1 件も見つかりませんでした。", true);
+    return;
+  }
+
+  state.tracks = parsed.tracks;
+  state.segments = parsed.segments;
+  state.edits = new Set();
+  updateExportButton();
+  state.dayIndex = buildDayIndex(parsed.tracks);
+  const keys = [...state.dayIndex.keys()].sort();
+  state.minDay = keys[0];
+  state.maxDay = keys[keys.length - 1];
+
+  fromEl.min = toEl.min = state.minDay;
+  fromEl.max = toEl.max = state.maxDay;
+  // 初期表示は直近 30 日。全期間だと初回描画が重くなりがちなため。
+  const DAY = 86400000;
+  const start30 = dayKey(new Date(state.maxDay + "T00:00:00").getTime() - 29 * DAY);
+  fromEl.value = start30 > state.minDay ? start30 : state.minDay;
+  toEl.value = state.maxDay;
+
+  enable("range-section", true);
+  enable("options-section", true);
+  enable("edit-section", true);
+  enable("stats-section", true);
+  enable("player-section", true);
+
+  await tick(`${parsed.tracks.length.toLocaleString()} 件の経路 (${state.minDay} 〜 ${state.maxDay})`);
+  await mapReady;
+  render();
+}
+
+/* ---- 期間 ---- */
+
+fromEl.addEventListener("change", render);
+toEl.addEventListener("change", render);
+smoothEl.addEventListener("change", render);
+despikeEl.addEventListener("change", render);
+connectEl.addEventListener("change", render);
+exportBtn.addEventListener("click", exportJSON);
+
+document.querySelectorAll(".presets button").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (!state.maxDay) return;
+    const preset = btn.dataset.preset;
+    if (preset === "all") {
+      fromEl.value = state.minDay;
+    } else {
+      const end = new Date(state.maxDay + "T00:00:00").getTime();
+      const start = dayKey(end - (Number(preset) - 1) * 86400000);
+      fromEl.value = start > state.minDay ? start : state.minDay;
+    }
+    toEl.value = state.maxDay;
+    render();
+  });
+});
+
+/* ============================================================
+ * 描画
+ * ============================================================ */
+
+function render() {
+  stopAnimation();
+  if (!state.tracks.length) return;
+
+  let from = fromEl.value || state.minDay;
+  let to = toEl.value || state.maxDay;
+  if (from > to) { [from, to] = [to, from]; fromEl.value = from; toEl.value = to; }
+
+  const raw = filterTracks(state.tracks, state.dayIndex, from, to);
+
+  // 飛び値の除去は絞り込んだ後にかける。全件に対してではないので軽く、
+  // チェックを外せば生データがそのまま見られる。
+  let selected = raw, removed = 0, rawPoints = 0;
+  for (const t of raw) rawPoints += t.points.length;
+  if (despikeEl.checked) {
+    selected = raw.map((t) => {
+      if (t.straight) return t;
+      const c = despike(t.points);
+      removed += c.removed;
+      return c.removed ? { ...t, points: c.points } : t;
+    });
+  }
+  state.removed = removed;
+
+  const { tracks: view, total, thinned, original } = thin(selected);
+  state.view = view;
+  state.smooth = smoothIterations(total);
+
+  map.getSource("routes").setData(tracksToGeoJSON(view, state.smooth));
+
+  state.gaps = connectEl.checked ? buildGaps(view) : new Array(view.length).fill(null);
+  const gaps = gapsToGeoJSON(state.gaps);
+  map.getSource("gaps").setData(gaps);
+  map.getSource("traveled-gaps").setData(EMPTY);
+  map.getSource("traveled").setData(EMPTY);
+  map.getSource("head").setData(EMPTY);
+  setPlaybackView(false);
+
+  const bounds = boundsOf(view);
+  if (bounds) map.fitBounds(bounds, { padding: 60, duration: 600, maxZoom: 15 });
+
+  // 統計 (距離は間引く前の selected から求める)
+  let distance = 0, duration = 0;
+  const byCategory = {};
+  for (const c of CATEGORIES) byCategory[c] = 0;
+  for (const t of selected) {
+    let d = 0;
+    for (let i = 1; i < t.points.length; i++) d += haversine(t.points[i - 1], t.points[i]);
+    byCategory[t.category] += d;
+    distance += d;
+    duration += Math.max(0, t.end - t.start);
+  }
+  for (const c of CATEGORIES) {
+    $("d-" + c).textContent = byCategory[c] > 0 ? fmtDistance(byCategory[c]) : "–";
+  }
+  $("s-dist").textContent = view.length ? fmtDistance(distance) : "–";
+  $("s-time").textContent = view.length ? fmtDuration(duration) : "–";
+  $("s-tracks").textContent = selected.length.toLocaleString();
+  $("s-points").textContent = total.toLocaleString();
+
+  if (!view.length) {
+    setStatus("この期間には移動経路がありません。");
+  } else {
+    const notes = [`${selected.length.toLocaleString()} 件の経路 / ${total.toLocaleString()} 点`];
+    if (gaps.features && gaps.features.length) notes.push(`途切れ ${gaps.features.length.toLocaleString()} 箇所を点線で接続`);
+    if (thinned) notes.push(`${original.toLocaleString()} 点から間引き`);
+    if (removed) notes.push(`飛び値 ${removed.toLocaleString()} 点を除去 (${(removed / rawPoints * 100).toFixed(1)}%)`);
+    setStatus(notes.join(" / "));
+  }
+
+  prepareAnimation(view);
+}
+
+/* ============================================================
+ * 再生
+ * ============================================================ */
+
+function prepareAnimation(view) {
+  // 経路どうしは時間が重なりうる。indexAt() の二分探索が成立するよう、
+  // 平坦化しながら時刻を単調非減少にクランプする(元データは書き換えない)。
+  const flat = [];
+  const spanOf = [];
+  let prev = -Infinity;
+  view.forEach((track, s) => {
+    for (const p of track.points) {
+      const t = p.t > prev ? p.t : prev;
+      prev = t;
+      flat.push({ lat: p.lat, lng: p.lng, t });
+      spanOf.push(s);
+    }
+  });
+  state.flat = flat;
+  state.spanOf = Uint32Array.from(spanOf);
+  state.spanCount = view.length;
+  state.spanCategory = view.map((t) => t.category);
+
+  const ok = flat.length >= 2;
+  playBtn.disabled = !ok;
+  seekEl.disabled = !ok;
+  seekEl.value = 0;
+  paintSeek();
+
+  if (!ok) { clockEl.textContent = ""; return; }
+
+  anim.t0 = flat[0].t;
+  anim.t1 = flat[flat.length - 1].t;
+  for (const track of view) if (track.end > anim.t1) anim.t1 = track.end;
+  if (!(anim.t1 > anim.t0)) anim.t1 = anim.t0 + 1000;
+  anim.t = anim.t0;
+  resetTraveled();
+  clockEl.textContent = fmtClock.format(new Date(anim.t0));
+}
+
+function resetTraveled() {
+  anim.index = 0;
+  anim.coords = Array.from({ length: state.spanCount }, () => []);
+}
+
+/** flat 上で t 以下の最後の地点の index を二分探索で求める */
+function indexAt(t) {
+  const a = state.flat;
+  let lo = 0, hi = a.length - 1, ans = 0;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (a[mid].t <= t) { ans = mid; lo = mid + 1; } else { hi = mid - 1; }
+  }
+  return ans;
+}
+
+function advanceTo(index) {
+  if (index < anim.index) resetTraveled(); // 巻き戻しは作り直す
+  for (let i = anim.index; i <= index; i++) {
+    anim.coords[state.spanOf[i]].push([state.flat[i].lng, state.flat[i].lat]);
+  }
+  anim.index = index + 1;
+}
+
+function traveledGeoJSON(t) {
+  const features = [];
+  // 走破済みは毎フレーム作り直すので、なめらか化は控えめに抑える
+  const iterations = Math.min(state.smooth, state.flat.length > 20000 ? 0 : 2);
+
+  // 現在地は記録された点と点の間にもいる。線をそこまで伸ばさないと、次の点に
+  // 届くまで軌跡が現在地に置いていかれる(速い再生ほど離れて見える)。
+  // 空白を渡っている間は点線側が伸びるので、こちらは伸ばさない。
+  const live = crossingGapSpan() >= 0 ? -1 : state.spanOf[headIndex()];
+  const head = headPosition(t);
+
+  anim.coords.forEach((c, s) => {
+    let coords = c;
+    if (s === live && c.length) {
+      const last = c[c.length - 1];
+      if (last[0] !== head[0] || last[1] !== head[1]) coords = c.concat([head]);
+    }
+    if (coords.length < 2) return;
+    features.push({
+      type: "Feature",
+      properties: { category: state.spanCategory[s] },
+      geometry: { type: "LineString", coordinates: iterations ? chaikin(coords, iterations) : coords },
+    });
+  });
+  return { type: "FeatureCollection", features };
+}
+
+/** flat 上の現在位置。次の点との間を時刻で補間する。 */
+function headIndex() {
+  return Math.min(Math.max(anim.index - 1, 0), state.flat.length - 1);
+}
+
+/**
+ * いま渡っている最中の空白の経路番号。渡っていなければ -1。
+ *
+ * 点線でつないだ空白は「記録は無いが移動はしている」区間なので、現在地は
+ * その上を進む。つないでいない空白(移動では説明できない飛び方)では、
+ * 現在地は次の経路が始まるまでその場に留まる。
+ */
+function crossingGapSpan() {
+  const i = headIndex();
+  const next = i + 1;
+  if (i < 0 || next >= state.flat.length) return -1;
+  const span = state.spanOf[next];
+  if (span === state.spanOf[i]) return -1;
+  return state.gaps[span] ? span : -1;
+}
+
+function headPosition(t) {
+  const a = state.flat;
+  const i = headIndex();
+  const cur = a[i], next = a[i + 1];
+  if (!next || !(next.t > cur.t) || !(t > cur.t)) return [cur.lng, cur.lat];
+  // 経路の中は記録どうしの間を、空白は始点と終点の間を、どちらも経過時間の
+  // 比で進める(空白は開始から終了まで一定速度で移動したものとして扱う)。
+  if (state.spanOf[i] !== state.spanOf[i + 1] && crossingGapSpan() < 0) return [cur.lng, cur.lat];
+  const k = Math.min(1, (t - cur.t) / (next.t - cur.t));
+  return [cur.lng + (next.lng - cur.lng) * k, cur.lat + (next.lat - cur.lat) * k];
+}
+
+/** 現在地が乗っている移動手段。空白の上では、その空白の手段を使う。 */
+function currentCategory() {
+  const cross = crossingGapSpan();
+  if (cross >= 0) return state.gaps[cross].category;
+  return state.spanCategory[state.spanOf[headIndex()]] || "other";
+}
+
+function headGeoJSON(t) {
+  return {
+    type: "FeatureCollection",
+    features: [{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: headPosition(t) } }],
+  };
+}
+
+/* ------------------------------------------------------------
+ * 速度連動の追尾
+ * ------------------------------------------------------------ */
+
+/*
+ * 縮尺は「実測した速度」ではなく「移動手段の代表速度 × 再生倍率」で決める。
+ *
+ * 実測値をそのまま使うと、信号待ちやカーブのたびに縮尺が動いて画面が
+ * 忙しない。移動手段は 1 本の経路の中では変わらないので、代表速度を使えば
+ * 縮尺は経路ごとに一定になり、切り替わるのは手段が変わったときだけになる。
+ *
+ * 経路ごとの実測平均速度と移動範囲から決める方式も試したが、経路が変わる
+ * たびに縮尺が動いて落ち着かなかった。多少引きすぎても、画面が静かな方を採る。
+ *
+ * 再生倍率は掛ける。同じ高速道路の移動でも 1分/秒 と 1日/秒 では画面上を
+ * 流れる速さが 1440 倍違うので、これを見ないと速い再生で現在地が一瞬で
+ * 画面外へ出てタイルの読み込みも追いつかない。
+ *
+ * 画面幅を SECONDS_TO_CROSS_VIEW 秒かけて横切る縮尺を選ぶことで、
+ * 手段と倍率をどう組み合わせても目で追える速さに揃う。
+ */
+
+// 移動手段ごとの代表速度 (m/s)。実測ではなく縮尺を決めるための目安。
+const CATEGORY_SPEED = {
+  walk: 1.4,      // 約 5 km/h
+  bike: 4.5,      // 約 16 km/h
+  car: 18,        // 約 65 km/h (市街地と高速の中間)
+  transit: 25,    // 約 90 km/h
+  air: 200,       // 約 720 km/h
+  other: 8,
+};
+const SECONDS_TO_CROSS_VIEW = 12;
+const MIN_GROUND_M = 300;   // 停止中に際限なく寄らないための下限
+const MIN_ZOOM = 2, MAX_ZOOM = 16.5;
+
+const EQUATOR_M_PER_PX = 156543.03392; // ズーム 0 / 256px タイルでの 1px の地面距離
+
+function zoomForApparentSpeed(apparentMps, lat, widthPx) {
+  const ground = Math.max(apparentMps * SECONDS_TO_CROSS_VIEW, MIN_GROUND_M);
+  const metersPerPixel = ground / widthPx;
+  const z = Math.log2(EQUATOR_M_PER_PX * Math.cos(lat * Math.PI / 180) / metersPerPixel);
+  return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
+}
+
+function targetZoom() {
+  const i = headIndex();
+  const apparent = (CATEGORY_SPEED[currentCategory()] ?? CATEGORY_SPEED.other) * (Number(speedEl.value) || 3600);
+  const width = map.getCanvas().clientWidth || 1200;
+  return zoomForApparentSpeed(apparent, state.flat[i].lat, width);
+}
+
+/*
+ * 縮尺は経路ごとに一度だけ決めて、その経路を進んでいる間は目標値を変えない。
+ * 毎フレーム計算すると、緯度の cos 補正が現在地の移動につれて変わるため
+ * 僅かにズームし続けて画面が落ち着かない。
+ *
+ * 目標が変わったときは瞬時に飛ばさず、ZOOM_EASE_MS かけて寄せる。
+ */
+const ZOOM_EASE_MS = 900;
+
+function setZoomTarget(z, snap) {
+  if (snap) {
+    anim.zoom = anim.zoomFrom = anim.zoomTo = z;
+    anim.zoomAt = 0;
+    return;
+  }
+  if (Math.abs(z - anim.zoomTo) < 1e-6) return;
+  anim.zoomFrom = anim.zoom;   // 遷移の途中でも、今いる値から続きを繋ぐ
+  anim.zoomTo = z;
+  anim.zoomAt = performance.now();
+}
+
+function easedZoom() {
+  if (!anim.zoomAt) return anim.zoomTo;
+  const k = Math.min(1, (performance.now() - anim.zoomAt) / ZOOM_EASE_MS);
+  if (k >= 1) { anim.zoomAt = 0; return anim.zoomTo; }
+  const eased = k * k * (3 - 2 * k); // smoothstep: 始めと終わりが緩やか
+  return anim.zoomFrom + (anim.zoomTo - anim.zoomFrom) * eased;
+}
+
+/** snap=true は再生開始時と再生倍率の変更時に、その場で取り直すための指定 */
+function updateCamera(snap) {
+  if (!followEl.checked || state.flat.length < 2) return;
+
+  // 空白は前後どちらの経路とも移動手段が違いうる(徒歩と徒歩の間を飛行機で
+  // 埋めることもある)ので、独立した区間として数えて縮尺を取り直す。
+  // 経路番号と衝突しないよう負の値にする。
+  const cross = crossingGapSpan();
+  const span = cross >= 0 ? -1 - cross : state.spanOf[headIndex()];
+  if (snap || span !== anim.span) {
+    anim.span = span;
+    setZoomTarget(targetZoom(), snap);
+  }
+  anim.zoom = easedZoom();
+  map.jumpTo({ center: headPosition(anim.t), zoom: anim.zoom });
+}
+
+function draw(force) {
+  const now = performance.now();
+  // setData は毎フレーム呼ばない。点数が多いときはさらに間隔を空ける。
+  const interval = state.flat.length > 20000 ? 100 : 33;
+  if (!force && now - anim.lastDraw < interval) return;
+  anim.lastDraw = now;
+  map.getSource("traveled").setData(traveledGeoJSON(anim.t));
+  map.getSource("traveled-gaps").setData(traveledGapsGeoJSON(anim.t));
+  map.getSource("head").setData(headGeoJSON(anim.t));
+
+  // 現在の移動手段を出す。縮尺はこれで決まるので、切り替わりが
+  // 起きているかどうかを画面で確かめられるようにしておく。
+  const category = currentCategory();
+  const zoom = followEl.checked ? ` · z${anim.zoom.toFixed(1)}` : "";
+  clockEl.textContent = `${fmtClock.format(new Date(anim.t))} · ${CATEGORY_LABEL[category]}${zoom}`;
+  seekEl.value = Math.round(((anim.t - anim.t0) / (anim.t1 - anim.t0)) * 1000);
+  paintSeek();
+}
+
+/** つまみより左を再生済みの色で塗る。塗り方はブラウザ間で揃わないので自前で持つ。 */
+function paintSeek() {
+  seekEl.style.setProperty("--p", Number(seekEl.value) / 10 + "%");
+}
+
+const SKIP_AFTER_MS = 30 * 60 * 1000; // これ以上その場に留まるなら飛ばす
+const STILL_M = 150;                  // この範囲に収まっていれば「動いていない」
+
+// 点線でつないだ空白のうち、この速さに届かないものは移動ではなく滞在とみなす。
+// 宿泊も、家の中での GPS の揺れで数十 m 離れた空白として残ることが多い。
+const IDLE_MPS = 0.5; // 1.8km/h。歩くより遅ければ、その場に留まっていたと読む
+
+/** 経路をまたぐ空白が、移動ではなく滞在か */
+function idleGap(i) {
+  const a = state.flat;
+  const gap = state.gaps[state.spanOf[i + 1]];
+  if (!gap) return true; // つないでいない空白では、現在地はそもそも動かない
+  const seconds = (a[i + 1].t - a[i].t) / 1000;
+  if (seconds <= 0) return true;
+  return haversine(a[i], a[i + 1]) / seconds < IDLE_MPS;
+}
+
+/**
+ * 次に現在地が動き出す時刻まで一気に進める。宿泊のように十数時間その場に
+ * 留まる区間を、再生倍率を上げずに飛ばすためのもの。
+ *
+ * 滞在は 1 つの長い空白として記録されるとは限らない。止まっている間も GPS は
+ * 数分おきに少しずつ違う場所を返し、記録は 2 時間ごとの経路に切られるため、
+ * 一晩の滞在が数十点に分かれる。直後の 1 点だけを見ていると、その一つ一つは
+ * 30 分に満たず、夜通しその場で時間だけが流れてしまう。同じ場所に留まって
+ * いる点をまとめて跨ぎ、実際に動き出す点まで進める。
+ */
+function skipIdle() {
+  const a = state.flat;
+  const from = indexAt(anim.t);
+  let anchor = a[from];
+  let i = from;
+
+  while (i + 1 < a.length) {
+    if (state.spanOf[i] !== state.spanOf[i + 1]) {
+      if (!idleGap(i)) break;   // 点線の上を実際に移動している区間は飛ばさない
+      anchor = a[i + 1];        // 空白の向こう側を新しい基準にする
+    } else if (haversine(anchor, a[i + 1]) >= STILL_M) {
+      break;                    // 同じ経路の中で動き出した
+    }
+    i++;
+  }
+
+  if (i > from && a[i].t - anim.t > SKIP_AFTER_MS) anim.t = Math.min(a[i].t, anim.t1);
+}
+
+function frame(now) {
+  if (!anim.playing) return;
+  const dt = Math.min(now - anim.lastFrame, 100); // タブ復帰時に飛びすぎないよう上限
+  anim.lastFrame = now;
+
+  // 縮尺が動いている間は時間を止める。そうしないと、移動手段が変わって
+  // 縮尺が追いついた頃にはその区間の移動が終わっている。
+  if (!(holdEl.checked && anim.zoomAt)) {
+    anim.t += dt * (Number(speedEl.value) || 3600);
+    if (skipEl.checked) skipIdle();
+  }
+
+  if (anim.t >= anim.t1) {
+    anim.t = anim.t1;
+    advanceTo(state.flat.length - 1);
+    draw(true);
+    pauseAnimation();
+    return;
+  }
+
+  advanceTo(indexAt(anim.t));
+  // カメラは毎フレーム動かす。draw() は重いので間引いているが、
+  // こちらを間引くと追尾がカクつく。
+  updateCamera();
+  draw(false);
+  anim.raf = requestAnimationFrame(frame);
+}
+
+function startAnimation() {
+  if (state.flat.length < 2) return;
+  if (anim.t >= anim.t1) { anim.t = anim.t0; resetTraveled(); }
+  anim.playing = true;
+  setPlayIcon(true);
+  setPlaybackView(true);
+  // 開始時は目標へ即座に合わせる。寄った状態から徐々に引くと、その間に
+  // 現在地が画面外へ飛び出してしまうため。
+  anim.zoom = map.getZoom();
+  updateCamera(true);
+  anim.lastFrame = performance.now();
+  anim.raf = requestAnimationFrame(frame);
+}
+
+/** 再生ボタンの見た目は CSS の擬似要素が描くので、状態だけ渡す */
+function setPlayIcon(playing) {
+  playBtn.classList.toggle("playing", playing);
+  playBtn.setAttribute("aria-label", playing ? "一時停止" : "再生");
+}
+
+function pauseAnimation() {
+  anim.playing = false;
+  setPlayIcon(false);
+  if (anim.raf) cancelAnimationFrame(anim.raf);
+  anim.raf = null;
+}
+
+/** 期間変更・ファイル再読込時に再生状態を完全に初期化する */
+function stopAnimation() {
+  pauseAnimation();
+  anim.t = anim.t0;
+  resetTraveled();
+  seekEl.value = 0;
+  paintSeek();
+  if (map.isStyleLoaded() && map.getSource("traveled")) {
+    map.getSource("traveled").setData(EMPTY);
+    map.getSource("traveled-gaps").setData(EMPTY);
+    map.getSource("head").setData(EMPTY);
+    setPlaybackView(false);
+  }
+}
+
+playBtn.addEventListener("click", () => {
+  anim.playing ? pauseAnimation() : startAnimation();
+});
+
+seekEl.addEventListener("input", () => {
+  paintSeek();
+  if (state.flat.length < 2) return;
+  anim.t = anim.t0 + (Number(seekEl.value) / 1000) * (anim.t1 - anim.t0);
+  advanceTo(indexAt(anim.t));
+  if (!anim.playing) setPlaybackView(true);
+  updateCamera();
+  draw(true);
+});
+
+/* ---- 経路のポップアップ ---- */
+
+/* ------------------------------------------------------------
+ * 移動手段の修正
+ *
+ * 判定を間違えている経路をクリックして直せるようにする。書き換えは
+ * 読み込んだセグメントそのものに対して行うので、書き出せばそのまま
+ * 読み直せる。
+ * ------------------------------------------------------------ */
+
+// 書き戻す値は Google が使う型名。表示だけ日本語にする。
+const EDITABLE_TYPES = [
+  ["WALKING", "徒歩"],
+  ["RUNNING", "ランニング"],
+  ["CYCLING", "自転車"],
+  ["IN_PASSENGER_VEHICLE", "自動車"],
+  ["MOTORCYCLING", "バイク"],
+  ["IN_BUS", "バス"],
+  ["IN_TRAIN", "電車"],
+  ["IN_SUBWAY", "地下鉄"],
+  ["IN_TRAM", "路面電車"],
+  ["FLYING", "飛行機"],
+  ["IN_FERRY", "船"],
+  ["UNKNOWN_ACTIVITY_TYPE", "不明"],
+];
+
+function setTrackType(track, type) {
+  // 移動手段を持っているセグメントへ書く。timelinePath は 2 時間ごとに
+  // 切られていて自分では手段を持たないので、そこへ書くとその 2 時間が
+  // まるごと 1 つの手段になってしまう。
+  const target = track.actSeg ?? track.seg;
+
+  // 同じ activity から切り出した経路は 2 時間の塊をまたいで複数ありうる。
+  // 書き出して読み直したときと同じになるよう、まとめて塗り替える。
+  for (const t of state.tracks) {
+    if ((t.actSeg ?? t.seg) === target) { t.type = type; t.category = categoryOf(type); }
+  }
+
+  // 元のセグメントにも書く。activity を持たない経路もあるので、その場合は作る。
+  const seg = state.segments[target];
+  if (seg) {
+    if (!seg.activity) seg.activity = {};
+    if (!seg.activity.topCandidate) seg.activity.topCandidate = {};
+    seg.activity.topCandidate.type = type;
+    state.edits.add(target);
+  }
+  updateExportButton();
+  render();
+}
+
+function openEditor(track, lngLat) {
+  const box = document.createElement("div");
+  box.className = "editor";
+
+  const when = document.createElement("div");
+  when.className = "editor-when";
+  when.textContent = `${fmtClock.format(new Date(track.start))} 〜 ${fmtClock.format(new Date(track.end))}`;
+
+  const select = document.createElement("select");
+  let matched = false;
+  for (const [value, text] of EDITABLE_TYPES) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = text;
+    if (value === track.type) { option.selected = true; matched = true; }
+    select.appendChild(option);
+  }
+  if (!matched) select.value = "UNKNOWN_ACTIVITY_TYPE";
+
+  const popup = new maplibregl.Popup({ closeButton: true, maxWidth: "240px" })
+    .setLngLat(lngLat)
+    .setDOMContent(box)
+    .addTo(map);
+
+  select.addEventListener("change", () => {
+    setTrackType(track, select.value);
+    popup.remove();
+  });
+
+  box.append(when, select);
+}
+
+map.on("click", "routes-line", (e) => {
+  const f = e.features && e.features[0];
+  if (!f) return;
+  const track = state.tracks[f.properties.id];
+  if (track) openEditor(track, e.lngLat);
+});
+map.on("mouseenter", "routes-line", () => { map.getCanvas().style.cursor = "pointer"; });
+map.on("mouseleave", "routes-line", () => { map.getCanvas().style.cursor = ""; });
+
+// 追尾中に地図を動かそうとしたら追尾を切る。自分の jumpTo でも同じ
+// イベントは飛ぶので、originalEvent の有無で人の操作かどうかを見分ける。
+for (const ev of ["dragstart", "zoomstart", "rotatestart", "pitchstart"]) {
+  map.on(ev, (e) => {
+    if (e.originalEvent && followEl.checked) followEl.checked = false;
+  });
+}
+
+followEl.addEventListener("change", () => {
+  if (followEl.checked) { anim.zoom = map.getZoom(); updateCamera(true); }
+});
+
+// 再生倍率を変えると見かけの速度が桁で変わる。徐々に追従させると、
+// その間に現在地が画面外へ出るので即座に合わせる。
+speedEl.addEventListener("change", () => updateCamera(true));
+
+/* ============================================================
+ * 狭い画面での上下比率
+ *
+ * 境界をドラッグして地図と操作パネルの取り分を変える。比率は
+ * 保存しない。設定ひとつのために端末へ書き込むと、「データは
+ * 端末の中だけで処理し保存しない」という説明と食い違うため。
+ * ============================================================ */
+
+const splitEl = $("split");
+const mapEl = $("map");
+const MIN_MAP = 120;    // これ以下だと地図が地図として使えない
+const MIN_PANEL = 190;  // 見出しと最初の操作が見える高さ
+
+function setSplit(px) {
+  const limit = window.innerHeight - MIN_PANEL - splitEl.offsetHeight;
+  const h = Math.max(MIN_MAP, Math.min(px, Math.max(MIN_MAP, limit)));
+  document.documentElement.style.setProperty("--split", h + "px");
+  splitEl.setAttribute("aria-valuenow", Math.round((h / window.innerHeight) * 100));
+  // canvas の大きさは CSS の変更に自動では追いつかない
+  map.resize();
+}
+
+let dragRaf = null, dragY = 0;
+
+splitEl.addEventListener("pointerdown", (e) => {
+  splitEl.setPointerCapture(e.pointerId);
+  document.body.classList.add("resizing");
+  e.preventDefault();
+});
+
+splitEl.addEventListener("pointermove", (e) => {
+  if (!splitEl.hasPointerCapture(e.pointerId)) return;
+  // 指のあるところが境界の中心に来るようにする
+  dragY = e.clientY - splitEl.offsetHeight / 2;
+  // 1 フレームに 1 回へ間引く。resize は毎回描き直しが走るため。
+  if (dragRaf) return;
+  dragRaf = requestAnimationFrame(() => { dragRaf = null; setSplit(dragY); });
+});
+
+for (const ev of ["pointerup", "pointercancel"]) {
+  splitEl.addEventListener(ev, (e) => {
+    splitEl.releasePointerCapture(e.pointerId);
+    document.body.classList.remove("resizing");
+  });
+}
+
+// ドラッグできない環境でも動かせるように
+splitEl.addEventListener("keydown", (e) => {
+  const step = e.shiftKey ? 64 : 24;
+  if (e.key === "ArrowUp") setSplit(mapEl.offsetHeight - step);
+  else if (e.key === "ArrowDown") setSplit(mapEl.offsetHeight + step);
+  else return;
+  e.preventDefault();
+});
+
+// 画面の回転などで、決めた高さが収まらなくなることがある
+window.addEventListener("resize", () => {
+  if (document.documentElement.style.getPropertyValue("--split")) {
+    setSplit(mapEl.offsetHeight);
+  }
+});
+</script>
+</body>
+</html>
