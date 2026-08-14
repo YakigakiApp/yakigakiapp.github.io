@@ -10,9 +10,10 @@
 <meta property="og:title" content="Timeline Visualizer" />
 <meta property="og:description" content="Google マップのタイムラインを、移動手段ごとに色分けした地図で振り返る。選んだファイルの中身は端末の外に出ません。" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2317191d'/%3E%3Cpath d='M4 10.5 12 7.5 20 10.5 28 7.5v14L20 24.5 12 21.5 4 24.5z' fill='%23fff'/%3E%3Cpath d='M12 7.5v14M20 10.5v14' stroke='%2317191d' stroke-width='1.4'/%3E%3C/svg%3E" />
-<!-- バージョンを固定する。@5 のままだと将来の更新でいきなり壊れうるうえ、
-     unpkg 側のキャッシュも短くなる。 -->
-<link href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" rel="stylesheet" />
+<!-- MapLibre は vendor/ に置いて自前で配信する。CDN から読むと、そこが落ちた
+     日に地図が一切描けずツールごと死ぬ。ファイルは npm の配布物そのままで、
+     更新するときはファイル名の版も一緒に上げる (古い版のキャッシュと混ざらない)。 -->
+<link href="vendor/maplibre-gl-5.24.0.css" rel="stylesheet" />
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3495204307936814"
         crossorigin="anonymous"></script>
 <style>
@@ -616,7 +617,7 @@
 <div id="split" role="separator" aria-orientation="horizontal" tabindex="0"
      aria-label="地図と操作パネルの高さの比率" aria-valuemin="0" aria-valuemax="100"></div>
 
-<script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script src="vendor/maplibre-gl-5.24.0.js"></script>
 <script>
 "use strict";
 
