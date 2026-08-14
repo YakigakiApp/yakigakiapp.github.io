@@ -178,8 +178,10 @@
     background-size: 9px;
   }
   input[type=date]:hover, select:hover { border-color: var(--ink-3); }
-  .row { display: flex; gap: 8px; }
-  .row > div { flex: 1; min-width: 0; }
+  /* 日付と時刻を横に並べる。時刻は "24:00" が入れば足りる */
+  .row { display: flex; gap: 6px; }
+  .row > input { flex: 1; min-width: 0; }
+  .row > select { flex: 0 0 92px; }
   .field + .field, .player + .field { margin-top: 12px; }
 
   .presets { display: flex; gap: 5px; margin-top: 10px; }
@@ -410,9 +412,19 @@
 
   <section id="range-section" class="disabled">
     <h2>期間</h2>
-    <div class="row">
-      <div><label for="from">開始</label><input type="date" id="from" /></div>
-      <div><label for="to">終了</label><input type="date" id="to" /></div>
+    <div class="field">
+      <label for="from">開始</label>
+      <div class="row">
+        <input type="date" id="from" />
+        <select id="from-time" aria-label="開始時刻"></select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="to">終了</label>
+      <div class="row">
+        <input type="date" id="to" />
+        <select id="to-time" aria-label="終了時刻"></select>
+      </div>
     </div>
     <div class="presets">
       <button data-preset="7">7日</button>
@@ -457,6 +469,7 @@
       <select id="speed">
         <option value="60">1分 / 秒</option>
         <option value="600">10分 / 秒</option>
+        <option value="1800">30分 / 秒</option>
         <option value="3600" selected>1時間 / 秒</option>
         <option value="21600">6時間 / 秒</option>
         <option value="86400">1日 / 秒</option>
@@ -468,7 +481,7 @@
       <label class="check"><input type="checkbox" id="follow" />再生中に現在地を追う</label>
       <label class="check"><input type="checkbox" id="hold" checked />縮尺の変更中は再生を止める</label>
     </div>
-    <p class="hint">追尾中は移動手段と再生倍率で縮尺が決まります。地図を操作すると解除されます。</p>
+    <p class="hint">追尾中は、同じ移動手段が続く区間の実際の速さと広がり、そして再生倍率で縮尺が決まります。地図を操作すると解除されます。</p>
   </section>
 
   <section id="options-section" class="disabled">
@@ -861,6 +874,33 @@ const dayKey = (ms) => {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 };
 
+/*
+ * 期間の時刻は 30 分刻みの一覧から選ぶ。分単位まで刻めても、記録の側が
+ * 数十秒〜数分おきなので細かすぎて選びにくい。
+ *
+ * 一覧の最後は "24:00" (翌日の 0 時)。選んだ時刻はちょうどその瞬間を指す
+ * 決まりにしてあるので、終了に "23:30" しか選べないと 1 日の最後の 30 分が
+ * 落ちてしまう。
+ */
+const TIME_STEP_MIN = 30;
+const DAY_END_TIME = "24:00";
+
+function fillTimeOptions(select) {
+  const html = [];
+  for (let m = 0; m <= 24 * 60; m += TIME_STEP_MIN) {
+    const v = `${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`;
+    html.push(`<option value="${v}">${v}</option>`);
+  }
+  select.innerHTML = html.join("");
+}
+
+/** 'YYYY-MM-DD' と 'HH:MM' を時刻へ。24:00 は翌日の 0 時になる */
+function stampMs(dayKeyStr, time) {
+  const [y, mo, d] = dayKeyStr.split("-").map(Number);
+  const [h, mi] = time.split(":").map(Number);
+  return new Date(y, mo - 1, d, h, mi).getTime();
+}
+
 /** startMs〜endMs が掛かる各日の 'YYYY-MM-DD' を順に渡す */
 function eachDay(startMs, endMs, cb) {
   const DAY = 86400000;
@@ -891,13 +931,42 @@ function buildDayIndex(tracks) {
   return bucketByDay(tracks, (t) => t.start, (t) => t.end);
 }
 
-function filterTracks(tracks, dayIndex, fromKey, toKey) {
+/**
+ * 期間の外の点を落とす。期間は 30 分刻みで指定できて、経路は 2 時間ごとに
+ * 切られているので、経路まるごとではなく点の単位で切る。
+ *
+ * 期間内の点が 1 つ以下でも、前後に点があれば線として残す。記録が飛んでいる
+ * ところに窓が丸ごと収まったとき、「点が 1 つも無いので何も出ない」となる方が
+ * 困る。
+ */
+function clipTrack(t, fromMs, toMs) {
+  const pts = t.points;
+  let i = 0;
+  while (i < pts.length && pts[i].t < fromMs) i++;
+  let j = pts.length - 1;
+  while (j >= 0 && pts[j].t > toMs) j--;
+  if (i > j && (i === 0 || j === pts.length - 1)) return null; // 期間の外にある経路
+  if (j - i < 1) { i = Math.max(0, i - 1); j = Math.min(pts.length - 1, j + 1); }
+  if (j - i < 1) return null;
+  if (i === 0 && j === pts.length - 1) return t; // 丸ごと入るなら作り直さない
+  const points = pts.slice(i, j + 1);
+  return { ...t, points, start: points[0].t, end: points[points.length - 1].t };
+}
+
+/** 日単位の索引で粗く絞ってから、分単位で切り出す */
+function filterTracks(tracks, dayIndex, fromMs, toMs) {
+  const fromKey = dayKey(fromMs), toKey = dayKey(toMs);
   const seen = new Set();
   for (const [key, ids] of dayIndex) {
     if (key < fromKey || key > toKey) continue;
     for (const id of ids) seen.add(id);
   }
-  return [...seen].sort((a, b) => a - b).map((i) => tracks[i]);
+  const out = [];
+  for (const i of [...seen].sort((a, b) => a - b)) {
+    const clipped = clipTrack(tracks[i], fromMs, toMs);
+    if (clipped) out.push(clipped);
+  }
+  return out;
 }
 
 /* ============================================================
@@ -1238,6 +1307,9 @@ const state = {
   spanOf: null,    // flat の index → 何番目の経路か (Uint32Array)
   spanCount: 0,
   spanCategory: [],
+  legs: [],        // 縮尺を決める単位(同じ移動手段が続くひと続き)
+  legOfSpan: [],   // 経路番号 → leg 番号
+  legOfGap: [],    // 空白(経路番号で引く) → leg 番号
 };
 
 const anim = {
@@ -1253,7 +1325,7 @@ const anim = {
   zoomFrom: 12,     // 遷移の開始値
   zoomTo: 12,       // 遷移の目標値
   zoomAt: 0,        // 遷移を始めた時刻(0 なら遷移していない)
-  span: -1,         // 追尾中に見ている経路。変わったら縮尺を取り直す
+  leg: -1,          // 追尾中に見ている leg。変わったら縮尺を取り直す
 };
 
 /* ============================================================
@@ -1263,6 +1335,9 @@ const anim = {
 const $ = (id) => document.getElementById(id);
 const drop = $("drop"), fileInput = $("file"), statusEl = $("status");
 const fromEl = $("from"), toEl = $("to");
+const fromTimeEl = $("from-time"), toTimeEl = $("to-time");
+fillTimeOptions(fromTimeEl);
+fillTimeOptions(toTimeEl);
 const playBtn = $("play"), seekEl = $("seek"), speedEl = $("speed"), clockEl = $("clock");
 const smoothEl = $("smooth"), despikeEl = $("despike"), followEl = $("follow"), connectEl = $("connect");
 const skipEl = $("skip"), holdEl = $("hold"), exportBtn = $("export");
@@ -1357,6 +1432,8 @@ async function loadFile(file) {
   const start30 = dayKey(new Date(state.maxDay + "T00:00:00").getTime() - 29 * DAY);
   fromEl.value = start30 > state.minDay ? start30 : state.minDay;
   toEl.value = state.maxDay;
+  fromTimeEl.value = "00:00";
+  toTimeEl.value = DAY_END_TIME;
 
   enable("range-section", true);
   enable("options-section", true);
@@ -1373,6 +1450,8 @@ async function loadFile(file) {
 
 fromEl.addEventListener("change", render);
 toEl.addEventListener("change", render);
+fromTimeEl.addEventListener("change", render);
+toTimeEl.addEventListener("change", render);
 smoothEl.addEventListener("change", render);
 despikeEl.addEventListener("change", render);
 connectEl.addEventListener("change", render);
@@ -1390,6 +1469,8 @@ document.querySelectorAll(".presets button").forEach((btn) => {
       fromEl.value = start > state.minDay ? start : state.minDay;
     }
     toEl.value = state.maxDay;
+    fromTimeEl.value = "00:00";
+    toTimeEl.value = DAY_END_TIME;
     render();
   });
 });
@@ -1402,11 +1483,17 @@ function render() {
   stopAnimation();
   if (!state.tracks.length) return;
 
-  let from = fromEl.value || state.minDay;
-  let to = toEl.value || state.maxDay;
-  if (from > to) { [from, to] = [to, from]; fromEl.value = from; toEl.value = to; }
+  const fromDay = fromEl.value || state.minDay;
+  const toDay = toEl.value || state.maxDay;
+  let fromMs = stampMs(fromDay, fromTimeEl.value || "00:00");
+  let toMs = stampMs(toDay, toTimeEl.value || DAY_END_TIME);
+  if (fromMs > toMs) { // 逆に指定されたら入れ替える。日付と時刻は組で動かす
+    [fromEl.value, toEl.value] = [toDay, fromDay];
+    [fromTimeEl.value, toTimeEl.value] = [toTimeEl.value, fromTimeEl.value];
+    [fromMs, toMs] = [toMs, fromMs];
+  }
 
-  const raw = filterTracks(state.tracks, state.dayIndex, from, to);
+  const raw = filterTracks(state.tracks, state.dayIndex, fromMs, toMs);
 
   // 飛び値の除去は絞り込んだ後にかける。全件に対してではないので軽く、
   // チェックを外せば生データがそのまま見られる。
@@ -1480,11 +1567,15 @@ function prepareAnimation(view) {
   // 平坦化しながら時刻を単調非減少にクランプする(元データは書き換えない)。
   const flat = [];
   const spanOf = [];
+  const spanStart = new Array(view.length).fill(-1); // 経路 → flat 上の最初/最後の index
+  const spanEnd = new Array(view.length).fill(-1);
   let prev = -Infinity;
   view.forEach((track, s) => {
     for (const p of track.points) {
       const t = p.t > prev ? p.t : prev;
       prev = t;
+      if (spanStart[s] < 0) spanStart[s] = flat.length;
+      spanEnd[s] = flat.length;
       flat.push({ lat: p.lat, lng: p.lng, t });
       spanOf.push(s);
     }
@@ -1493,6 +1584,9 @@ function prepareAnimation(view) {
   state.spanOf = Uint32Array.from(spanOf);
   state.spanCount = view.length;
   state.spanCategory = view.map((t) => t.category);
+  buildLegs(view, spanStart, spanEnd);
+
+  anim.leg = -1; // leg は作り直したので、番号が同じでも縮尺を取り直す
 
   const ok = flat.length >= 2;
   playBtn.disabled = !ok;
@@ -1614,24 +1708,37 @@ function headGeoJSON(t) {
  * ------------------------------------------------------------ */
 
 /*
- * 縮尺は「実測した速度」ではなく「移動手段の代表速度 × 再生倍率」で決める。
+ * 縮尺を決める単位は「経路」ではなく leg — 同じ移動手段が続くひと続き。
  *
- * 実測値をそのまま使うと、信号待ちやカーブのたびに縮尺が動いて画面が
- * 忙しない。移動手段は 1 本の経路の中では変わらないので、代表速度を使えば
- * 縮尺は経路ごとに一定になり、切り替わるのは手段が変わったときだけになる。
+ * 移動手段の代表速度だけで決めていた頃は、高速道路を何時間も走るのと街中を
+ * 渋滞にはまりながら数キロ走るのが同じ縮尺になっていた。どちらも car なので
+ * 区別できない。そこで leg の実測平均速度を使う。
  *
- * 経路ごとの実測平均速度と移動範囲から決める方式も試したが、経路が変わる
- * たびに縮尺が動いて落ち着かなかった。多少引きすぎても、画面が静かな方を採る。
+ * 経路 (1〜2 時間ごとに切られた記録) ごとに実測値で決める方式は一度試して
+ * 差し戻している。数値としては正確でも、経路が変わるたびに縮尺が動いて
+ * 落ち着かなかった。leg は同じ手段が続く限り何本の経路をまたいでも 1 つなので、
+ * 縮尺が動くのは手段が変わったときだけ — 代表速度の頃より必ず減る。
  *
- * 再生倍率は掛ける。同じ高速道路の移動でも 1分/秒 と 1日/秒 では画面上を
- * 流れる速さが 1440 倍違うので、これを見ないと速い再生で現在地が一瞬で
- * 画面外へ出てタイルの読み込みも追いつかない。
+ * 速度は 3 つの制約で地面の幅 (画面幅に映す実距離) に変える:
  *
- * 画面幅を SECONDS_TO_CROSS_VIEW 秒かけて横切る縮尺を選ぶことで、
- * 手段と倍率をどう組み合わせても目で追える速さに揃う。
+ *   1. 見かけの速度 × SECONDS_TO_CROSS_VIEW
+ *      再生倍率を掛けた速さで、画面幅を SECONDS_TO_CROSS_VIEW 秒かけて横切る
+ *      幅。手段と倍率をどう組み合わせても目で追える速さに揃う。
+ *   2. leg の広がり (外接矩形の対角) × EXTENT_MARGIN を上限にする
+ *      1km の街中の移動を 778km 幅で映さないための蓋。余裕を掛けるのは、
+ *      leg がぴったり画面に収まるだけだと周りの土地が見えないため。始点と
+ *      終点の距離ではなく矩形にするのは、往復する移動が距離ゼロになるため。
+ *   3. MIN_GROUND_M を下限にする
+ *      ほとんど動いていない leg で際限なく寄らないため。
+ *
+ * 全体を広く映したいときは、この 3 つと MAX_ZOOM を一緒に動かす。どれか 1 つ
+ * だけ緩めても、街中や高速のように別の制約が効いている場面では変わらない。
+ *
+ * 最後に ZOOM_STEP 刻みに丸める。速度が近い leg どうしが同じ目標値に落ちれば
+ * 遷移そのものが起きない (緯度の cos 補正による僅かな差も吸収される)。
  */
 
-// 移動手段ごとの代表速度 (m/s)。実測ではなく縮尺を決めるための目安。
+// 実測値が取れない leg のための、移動手段ごとの代表速度 (m/s)
 const CATEGORY_SPEED = {
   walk: 1.4,      // 約 5 km/h
   bike: 4.5,      // 約 16 km/h
@@ -1640,28 +1747,128 @@ const CATEGORY_SPEED = {
   air: 200,       // 約 720 km/h
   other: 8,
 };
-const SECONDS_TO_CROSS_VIEW = 12;
-const MIN_GROUND_M = 300;   // 停止中に際限なく寄らないための下限
-const MIN_ZOOM = 2, MAX_ZOOM = 16.5;
+const SECONDS_TO_CROSS_VIEW = 20;
+const EXTENT_MARGIN = 2.5;  // leg の広がりの何倍まで引いて、周りの土地を見せるか
+const MIN_GROUND_M = 600;   // 地面の幅がゼロに潰れないための下限
+const MIN_ZOOM = 2;
+const ZOOM_STEP = 0.5;      // 目標値の丸め幅。細かい差で遷移を起こさないため
 
-const EQUATOR_M_PER_PX = 156543.03392; // ズーム 0 / 256px タイルでの 1px の地面距離
+/*
+ * 徒歩やごく短距離の移動は、寄り側の限界で頭打ちになる (MIN_GROUND_M より先に
+ * こちらが効く)。既定の 13.5 は「福岡市の中心部から空港までが一画面に入る
+ * くらい」で、短い移動でも街のどこを動いたのかが分かる寄り具合。
+ *
+ * ただし限界は再生倍率で変える。6時間/秒 を超えると現在地は 1 秒で半日ぶん
+ * 進むので、街の細部まで寄っても線が一瞬で通り過ぎるだけで何も読み取れない。
+ * 速い再生ほど、どの街からどの街へ動いたのかが分かる引きで止める。
+ */
+const MAX_ZOOM = 13.5;
+const MAX_ZOOM_BY_RATE = [
+  [604800, 7],    // 1週間/秒 … 画面幅 500km。地方どうしの行き来が見える
+  [86400, 8.5],   // 1日/秒   … 画面幅 180km。県をまたぐ移動が見える
+  [21600, 10],    // 6時間/秒 … 画面幅 60km。都市圏が丸ごと入る
+];
 
-function zoomForApparentSpeed(apparentMps, lat, widthPx) {
-  const ground = Math.max(apparentMps * SECONDS_TO_CROSS_VIEW, MIN_GROUND_M);
-  const metersPerPixel = ground / widthPx;
-  const z = Math.log2(EQUATOR_M_PER_PX * Math.cos(lat * Math.PI / 180) / metersPerPixel);
-  return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
-}
-
-function targetZoom() {
-  const i = headIndex();
-  const apparent = (CATEGORY_SPEED[currentCategory()] ?? CATEGORY_SPEED.other) * (Number(speedEl.value) || 3600);
-  const width = map.getCanvas().clientWidth || 1200;
-  return zoomForApparentSpeed(apparent, state.flat[i].lat, width);
+function maxZoomFor(rate) {
+  for (const [from, z] of MAX_ZOOM_BY_RATE) if (rate >= from) return z;
+  return MAX_ZOOM;
 }
 
 /*
- * 縮尺は経路ごとに一度だけ決めて、その経路を進んでいる間は目標値を変えない。
+ * ズーム 0 での 1px の地面距離 (赤道上)。MapLibre のズームは 512px タイル基準
+ * (ズーム 0 で世界一周が 512px) なので 40075017 / 512 = 78271.5。
+ * 256px タイルの 156543 を使うと、計算したズームが常に 1 段階ぶん寄り、
+ * 狙った画面幅の半分しか映らない。
+ */
+const EQUATOR_M_PER_PX = 78271.516964;
+
+/**
+ * 再生順に並べた単位 (経路と、その直前の空白) を移動手段で束ねて leg を作る。
+ * 空白は前後どちらの手段とも違いうる (徒歩と徒歩の間を飛行機で埋めることも
+ * ある) ので、独立した単位として数えてから同じ手段のものと束ねる。
+ */
+function buildLegs(view, spanStart, spanEnd) {
+  const legs = [];
+  const legOfSpan = new Array(view.length).fill(-1);
+  const legOfGap = new Array(view.length).fill(-1);
+  let cur = null, curCategory = null;
+
+  const open = (category) => {
+    cur = { dist: 0, move: 0, minLat: 90, maxLat: -90, minLng: 180, maxLng: -180, extent: 0 };
+    curCategory = category;
+    legs.push(cur);
+  };
+
+  // flat の [i, j] を今の leg に足す。信号待ちや滞在で時間だけが流れた部分は
+  // 距離も時間も数えない。数えると街中の平均速度が実際の走りより遅く出て、
+  // 動き出した瞬間に現在地が画面外へ飛ぶ。
+  const add = (i, j) => {
+    for (let k = i; k <= j; k++) {
+      const p = state.flat[k];
+      if (p.lat < cur.minLat) cur.minLat = p.lat;
+      if (p.lat > cur.maxLat) cur.maxLat = p.lat;
+      if (p.lng < cur.minLng) cur.minLng = p.lng;
+      if (p.lng > cur.maxLng) cur.maxLng = p.lng;
+      if (k === i) continue;
+      const seconds = (p.t - state.flat[k - 1].t) / 1000;
+      if (seconds <= 0) continue;
+      const d = haversine(state.flat[k - 1], p);
+      if (d / seconds < IDLE_MPS) continue;
+      cur.dist += d;
+      cur.move += seconds;
+    }
+  };
+
+  for (let s = 0; s < view.length; s++) {
+    if (spanStart[s] < 0) continue; // 点のない経路は flat に現れない
+    const gap = state.gaps[s];
+    if (gap && s > 0 && spanEnd[s - 1] >= 0) {
+      if (!cur || curCategory !== gap.category) open(gap.category);
+      add(spanEnd[s - 1], spanStart[s]);
+      legOfGap[s] = legs.length - 1;
+    }
+    if (!cur || curCategory !== state.spanCategory[s]) open(state.spanCategory[s]);
+    add(spanStart[s], spanEnd[s]);
+    legOfSpan[s] = legs.length - 1;
+  }
+
+  for (const leg of legs) {
+    leg.extent = leg.maxLat < leg.minLat ? 0
+      : haversine({ lat: leg.minLat, lng: leg.minLng }, { lat: leg.maxLat, lng: leg.maxLng });
+  }
+  state.legs = legs;
+  state.legOfSpan = legOfSpan;
+  state.legOfGap = legOfGap;
+}
+
+/** 追尾中に縮尺を決めている leg。空白の上ではその空白が属する leg */
+function currentLeg() {
+  const cross = crossingGapSpan();
+  const leg = cross >= 0 ? state.legOfGap[cross] : state.legOfSpan[state.spanOf[headIndex()]];
+  return leg >= 0 ? leg : 0;
+}
+
+function targetZoom(legIndex) {
+  const leg = state.legs[legIndex];
+  const rate = Number(speedEl.value) || 3600;
+  const mps = leg && leg.move > 0
+    ? leg.dist / leg.move
+    : (CATEGORY_SPEED[currentCategory()] ?? CATEGORY_SPEED.other);
+
+  let ground = mps * rate * SECONDS_TO_CROSS_VIEW;
+  if (leg && leg.extent > 0) ground = Math.min(ground, leg.extent * EXTENT_MARGIN);
+  ground = Math.max(ground, MIN_GROUND_M);
+
+  const width = map.getCanvas().clientWidth || 1200;
+  const lat = state.flat[headIndex()].lat;
+  const z = Math.log2(EQUATOR_M_PER_PX * Math.cos(lat * Math.PI / 180) * width / ground);
+  // 引く側へ丸める。寄りすぎて現在地を見失うより、少し広い方が困らない。
+  const stepped = Math.floor(z / ZOOM_STEP) * ZOOM_STEP;
+  return Math.max(MIN_ZOOM, Math.min(maxZoomFor(rate), stepped));
+}
+
+/*
+ * 縮尺は leg ごとに一度だけ決めて、その leg を進んでいる間は目標値を変えない。
  * 毎フレーム計算すると、緯度の cos 補正が現在地の移動につれて変わるため
  * 僅かにズームし続けて画面が落ち着かない。
  *
@@ -1693,14 +1900,10 @@ function easedZoom() {
 function updateCamera(snap) {
   if (!followEl.checked || state.flat.length < 2) return;
 
-  // 空白は前後どちらの経路とも移動手段が違いうる(徒歩と徒歩の間を飛行機で
-  // 埋めることもある)ので、独立した区間として数えて縮尺を取り直す。
-  // 経路番号と衝突しないよう負の値にする。
-  const cross = crossingGapSpan();
-  const span = cross >= 0 ? -1 - cross : state.spanOf[headIndex()];
-  if (snap || span !== anim.span) {
-    anim.span = span;
-    setZoomTarget(targetZoom(), snap);
+  const leg = currentLeg();
+  if (snap || leg !== anim.leg) {
+    anim.leg = leg;
+    setZoomTarget(targetZoom(leg), snap);
   }
   anim.zoom = easedZoom();
   map.jumpTo({ center: headPosition(anim.t), zoom: anim.zoom });
@@ -1716,11 +1919,13 @@ function draw(force) {
   map.getSource("traveled-gaps").setData(traveledGapsGeoJSON(anim.t));
   map.getSource("head").setData(headGeoJSON(anim.t));
 
-  // 現在の移動手段を出す。縮尺はこれで決まるので、切り替わりが
-  // 起きているかどうかを画面で確かめられるようにしておく。
+  // 移動手段と、縮尺を決めている leg の実測速度を出す。なぜこの縮尺なのかを
+  // 画面で確かめられるようにしておく。
   const category = currentCategory();
+  const leg = followEl.checked ? state.legs[anim.leg] : null;
+  const speed = leg && leg.move > 0 ? ` ${Math.round(leg.dist / leg.move * 3.6)}km/h` : "";
   const zoom = followEl.checked ? ` · z${anim.zoom.toFixed(1)}` : "";
-  clockEl.textContent = `${fmtClock.format(new Date(anim.t))} · ${CATEGORY_LABEL[category]}${zoom}`;
+  clockEl.textContent = `${fmtClock.format(new Date(anim.t))} · ${CATEGORY_LABEL[category]}${speed}${zoom}`;
   seekEl.value = Math.round(((anim.t - anim.t0) / (anim.t1 - anim.t0)) * 1000);
   paintSeek();
 }
