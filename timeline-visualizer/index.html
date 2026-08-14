@@ -4,11 +4,11 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Timeline Visualizer — Google マップのタイムラインを地図で描く</title>
-<meta name="description" content="Google マップからエクスポートしたタイムライン JSON を、移動手段ごとに色分けした地図と再生アニメーションで振り返るツール。データはブラウザ内だけで処理され、どこにも送信されません。" />
+<meta name="description" content="Google マップからエクスポートしたタイムライン JSON を、移動手段ごとに色分けした地図と再生アニメーションで振り返るツール。選んだファイルの中身は端末の中だけで処理され、外部に送信されません。" />
 <meta name="theme-color" content="#fbfaf8" />
 <meta property="og:type" content="website" />
 <meta property="og:title" content="Timeline Visualizer" />
-<meta property="og:description" content="Google マップのタイムラインを、移動手段ごとに色分けした地図で振り返る。データは端末の外に出ません。" />
+<meta property="og:description" content="Google マップのタイムラインを、移動手段ごとに色分けした地図で振り返る。選んだファイルの中身は端末の外に出ません。" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2317191d'/%3E%3Cpath d='M4 10.5 12 7.5 20 10.5 28 7.5v14L20 24.5 12 21.5 4 24.5z' fill='%23fff'/%3E%3Cpath d='M12 7.5v14M20 10.5v14' stroke='%2317191d' stroke-width='1.4'/%3E%3C/svg%3E" />
 <!-- バージョンを固定する。@5 のままだと将来の更新でいきなり壊れうるうえ、
      unpkg 側のキャッシュも短くなる。 -->
@@ -123,16 +123,8 @@
     margin: 12px 0 0; padding: 12px 13px;
     background: var(--sunken); border-radius: var(--r);
   }
-  .privacy p { margin: 0; color: var(--ink); }
-  .privacy b { font-weight: 600; }
-  /* 「何が外に出て何が出ないか」を並べて見せる。読まなくても対比で伝わる。 */
-  .privacy dl {
-    display: grid; grid-template-columns: auto 1fr; gap: 6px 10px;
-    margin: 10px 0 0; padding-top: 10px;
-    border-top: 1px solid var(--line-2);
-  }
-  .privacy dt { color: var(--ink); font-weight: 600; white-space: nowrap; }
-  .privacy dd { margin: 0; }
+  .privacy p { margin: 0; }
+  .privacy b { color: var(--ink); font-weight: 600; }
 
   .howto { margin-top: 10px; font-size: 11px; color: var(--ink-2); }
   .howto + .howto { margin-top: 7px; }
@@ -323,12 +315,8 @@
 
   section.disabled { opacity: .45; pointer-events: none; }
 
-  footer {
-    padding: 16px var(--pad) 24px;
-    border-top: 1px solid var(--line);
-    font-size: 10.5px; line-height: 1.7; color: var(--ink-3);
-  }
-  footer a { color: var(--ink-2); }
+  /* 最後の区切りが画面下に貼り付かないよう、少し余白を足す */
+  section:last-of-type { padding-bottom: 28px; }
 
   /* ---- 地図上のパーツ ---- */
 
@@ -401,13 +389,7 @@
     <input type="file" id="file" accept=".json,application/json" />
     <div id="status"></div>
     <div class="privacy">
-      <p>外部とやりとりするのは、<b>地図を表示するときだけ</b>です。</p>
-      <dl>
-        <dt>タイムライン</dt>
-        <dd>お使いの端末の中だけで処理します。外部に送られることも、保存されることもありません。</dd>
-        <dt>地図</dt>
-        <dd>表示に必要な分をインターネットから読み込みます。</dd>
-      </dl>
+      <p>選択したファイルの中身は、読込みから地図上への描画まで、<b>すべてお使いの端末の中だけ</b>で処理されます。外部に送信されることも、保存されることもありません。</p>
     </div>
     <details class="howto">
       <summary>タイムラインの書き出し方</summary>
@@ -497,10 +479,6 @@
     <button id="export" class="wide" disabled>修正はまだありません</button>
   </section>
 
-  <footer>
-    地図 © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors ・
-    タイル <a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a>
-  </footer>
 </div>
 
 <div id="map"></div>
