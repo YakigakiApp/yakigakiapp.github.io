@@ -377,17 +377,23 @@
   }
   .maplibregl-ctrl-group { border-radius: 6px !important; box-shadow: 0 1px 4px rgba(23,25,29,.16) !important; }
 
-  /* 拡大縮小 (右上) と同じ姿で、出典表示の上に置く */
+  /* 拡大縮小 (右上) と同じ高さと影で、出典表示の上に置く。
+     アイコンだけでは何が起きるか読めないので、文字を添える。 */
   #share {
     position: absolute; right: 10px; bottom: 34px;
-    width: 32px; height: 32px; padding: 0;
-    display: grid; place-items: center;
+    height: 32px; padding: 0 11px;
+    display: flex; align-items: center; gap: 6px;
     border: 0; border-radius: 6px;
     background: var(--field); color: var(--ink);
+    /* ボタンは font を継がない */
+    font: 500 12px/1 -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+          "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Arial, sans-serif;
+    white-space: nowrap;
     box-shadow: 0 1px 4px rgba(23, 25, 29, .16);
     cursor: pointer;
     transition: background .12s, opacity .15s;
   }
+  #share svg { flex: none; display: block; }
   #share:hover { background: var(--sunken); }
   #share:active { background: var(--line); }
   #share:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
@@ -594,13 +600,15 @@
 
 <div id="map-wrap">
   <div id="map"></div>
-  <button id="share" type="button" disabled aria-label="今の地図を画像で保存">
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M8.5 6H6.5A1.5 1.5 0 0 0 5 7.5v11A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-11A1.5 1.5 0 0 0 17.5 6h-2" />
-      <path d="M12 14.5V3.5" />
-      <path d="M8.6 6.9 12 3.5l3.4 3.4" />
+  <button id="share" type="button" disabled>
+    <!-- 矢印を線で囲わず、受け皿へ下ろす形にする。小さくしても線が交差しない。 -->
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 3.5v11" />
+      <path d="M7.5 10.5 12 15l4.5-4.5" />
+      <path d="M4.5 16.5v2A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5v-2" />
     </svg>
+    <span id="share-text">画像を保存</span>
   </button>
 </div>
 
@@ -1444,6 +1452,7 @@ fillTimeOptions(toTimeEl);
 const playBtn = $("play"), seekEl = $("seek"), speedEl = $("speed"), clockEl = $("clock");
 const smoothEl = $("smooth"), despikeEl = $("despike"), followEl = $("follow"), connectEl = $("connect");
 const skipEl = $("skip"), holdEl = $("hold"), exportBtn = $("export"), shareBtn = $("share");
+const shareTextEl = $("share-text");
 const zoomAutoEl = $("zoom-auto"), zoomFixedEl = $("zoom-fixed"), scaleEl = $("scale");
 
 function setStatus(msg, isError) {
@@ -2666,6 +2675,8 @@ async function shareMapImage() {
   if (!state.summary || shareBtn.classList.contains("busy")) return;
   shareBtn.classList.add("busy");
   shareBtn.disabled = true;
+  // 大きな地図だと PNG を書き出すまで一呼吸ある。押さったことを見せる。
+  shareTextEl.textContent = "保存中…";
   try {
     const sum = state.summary;
     const canvas = composeShareImage(await captureMap());
@@ -2691,6 +2702,7 @@ async function shareMapImage() {
     setStatus("画像を保存できませんでした: " + (err && err.message ? err.message : err), true);
   } finally {
     shareBtn.classList.remove("busy");
+    shareTextEl.textContent = "画像を保存";
     shareBtn.disabled = !state.summary;
   }
 }
