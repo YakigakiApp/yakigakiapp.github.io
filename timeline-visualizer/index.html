@@ -2086,10 +2086,52 @@ function frame(now) {
   anim.raf = requestAnimationFrame(frame);
 }
 
+/* ------------------------------------------------------------
+ * 再生中は画面を消させない
+ *
+ * 長い期間の再生は数分ぶん指を触れないので、スマホでは自動ロックで画面が
+ * 消える。Screen Wake Lock を再生の間だけ借りて、一時停止と終了で必ず返す。
+ * 眺めているだけの間まで点けたままにすると電池を減らすだけなので、再生と
+ * 寿命を揃える。
+ *
+ * 対応していない端末や省電力モードでは要求が失敗する。再生そのものはできる
+ * ので、黙って諦める (点かないことを知らせても打つ手がない)。
+ *
+ * タブを裏に回すと OS が勝手にロックを手放す。戻ったときに取り直さないと、
+ * 一度ホームに戻っただけで以後効かなくなる。
+ * ------------------------------------------------------------ */
+let wakeLock = null;
+
+async function keepScreenAwake(on) {
+  if (!navigator.wakeLock) return;
+
+  if (!on) {
+    const held = wakeLock;
+    wakeLock = null;
+    if (held) { try { await held.release(); } catch (e) { /* すでに失われている */ } }
+    return;
+  }
+
+  if (wakeLock) return;
+  try {
+    const lock = await navigator.wakeLock.request("screen");
+    lock.addEventListener("release", () => { if (wakeLock === lock) wakeLock = null; });
+    // 借りている間に再生が止まっていたら、そのまま返す
+    if (anim.playing) wakeLock = lock; else await lock.release();
+  } catch (e) {
+    wakeLock = null;
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && anim.playing) keepScreenAwake(true);
+});
+
 function startAnimation() {
   if (state.flat.length < 2) return;
   if (anim.t >= anim.t1) { anim.t = anim.t0; resetTraveled(); }
   anim.playing = true;
+  keepScreenAwake(true);
   setPlayIcon(true);
   setPlaybackView(true);
   // 開始時は目標へ即座に合わせる。寄った状態から徐々に引くと、その間に
@@ -2108,6 +2150,7 @@ function setPlayIcon(playing) {
 
 function pauseAnimation() {
   anim.playing = false;
+  keepScreenAwake(false);
   setPlayIcon(false);
   if (anim.raf) cancelAnimationFrame(anim.raf);
   anim.raf = null;
@@ -2233,13 +2276,35 @@ map.on("click", "routes-line", (e) => {
 map.on("mouseenter", "routes-line", () => { map.getCanvas().style.cursor = "pointer"; });
 map.on("mouseleave", "routes-line", () => { map.getCanvas().style.cursor = ""; });
 
-// 追尾中に地図を動かそうとしたら追尾を切る。自分の jumpTo でも同じ
-// イベントは飛ぶので、originalEvent の有無で人の操作かどうかを見分ける。
+/*
+ * 再生中に地図を動かそうとしたら追尾を切る。カメラは毎フレーム現在地へ
+ * 飛ぶので、切らないと指と引っ張り合って地図が動かせない。自分の jumpTo でも
+ * 同じイベントは飛ぶので、originalEvent の有無で人の操作かを見分ける。
+ *
+ * 止まっている間は切らない。追尾を入れてから「この寄り具合で追わせたい」と
+ * 気づいて地図を広げる、という順番になるのが普通で、そのたびにチェックが
+ * 外れて付け直すことになる。止まっているカメラは指と引っ張り合わない。
+ */
 for (const ev of ["dragstart", "zoomstart", "rotatestart", "pitchstart"]) {
   map.on(ev, (e) => {
-    if (e.originalEvent && followEl.checked) { followEl.checked = false; syncFollowUI(); }
+    if (e.originalEvent && followEl.checked && anim.playing) {
+      followEl.checked = false;
+      syncFollowUI();
+    }
   });
 }
+
+/*
+ * 止まっている間に変えた縮尺は、追尾のものとして引き継ぐ。ここで引き継がないと
+ * 指で広げた意味がなく、再生を押した瞬間に元の寄り具合へ戻ってしまう。
+ *
+ * 縮尺を明示的に選んでいるとき (10,000分の1 など) は選択が勝つので触らない。
+ */
+map.on("zoomend", () => {
+  if (!followEl.checked || anim.playing) return;
+  if (zoomFixedEl.checked && Number(scaleEl.value)) return;
+  setZoomTarget(map.getZoom(), true);
+});
 
 /** 追尾にぶら下がる選択の、出し入れと有効・無効 */
 function syncFollowUI() {
