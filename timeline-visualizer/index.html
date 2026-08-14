@@ -193,7 +193,7 @@
   }
   .presets button:hover { border-color: var(--ink); color: var(--ink); }
 
-  /* ---- チェックボックス ---- */
+  /* ---- チェックボックス・ラジオ ---- */
 
   .checks { display: grid; gap: 9px; }
   .check {
@@ -211,6 +211,24 @@
     background: var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.6 6.3l2.3 2.3 4.5-5' fill='none' stroke='%23fff' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat;
     border-color: var(--ink);
   }
+  /* ラジオは丸。中の点は背景で描くので、チェックの画像を上書きする */
+  .check input[type=radio] { border-radius: 50%; }
+  .check input[type=radio]:checked {
+    background: radial-gradient(circle at center, var(--ink) 0 3.2px, var(--field) 3.7px);
+    border-color: var(--ink);
+  }
+
+  /* 上のチェック・ラジオにぶら下がる選択。左の線でどこまでが従属かを示す */
+  .sub {
+    display: grid; gap: 9px;
+    margin-left: 7px; padding-left: 16px;
+    border-left: 1px solid var(--line-2);
+  }
+  .sub[hidden] { display: none; }
+  /* 選ばれていない側は、消さずに薄くして触れなくする。出し入れすると
+     ラジオを行き来するたびに下の行が跳ねて、どこを触っているか見失う。 */
+  .sub.off { opacity: .35; }
+  .sub.off * { pointer-events: none; }
 
   .hint { font-size: 11px; color: var(--ink-2); line-height: 1.6; margin: 12px 0 0; }
 
@@ -479,9 +497,30 @@
     <div class="checks" style="margin-top:14px">
       <label class="check"><input type="checkbox" id="skip" checked />30分以上の停止を飛ばす</label>
       <label class="check"><input type="checkbox" id="follow" />再生中に現在地を追う</label>
-      <label class="check"><input type="checkbox" id="hold" checked />縮尺の変更中は再生を止める</label>
+      <div class="sub" id="follow-sub" hidden>
+        <label class="check"><input type="radio" name="zoom-mode" id="zoom-auto" checked />縮尺を自動変更する</label>
+        <div class="sub" id="zoom-auto-sub">
+          <label class="check"><input type="checkbox" id="hold" checked />縮尺の変更中は再生を止める</label>
+        </div>
+        <label class="check"><input type="radio" name="zoom-mode" id="zoom-fixed" />縮尺を固定する</label>
+        <div class="sub" id="zoom-fixed-sub">
+          <select id="scale" aria-label="固定する縮尺" disabled>
+            <option value="0" selected>自動(今の地図の縮尺)</option>
+            <option value="1000">1,000分の1</option>
+            <option value="5000">5,000分の1</option>
+            <option value="10000">10,000分の1</option>
+            <option value="25000">25,000分の1</option>
+            <option value="50000">50,000分の1</option>
+            <option value="100000">100,000分の1</option>
+            <option value="250000">250,000分の1</option>
+            <option value="500000">500,000分の1</option>
+            <option value="1000000">1,000,000分の1</option>
+            <option value="5000000">5,000,000分の1</option>
+          </select>
+        </div>
+      </div>
     </div>
-    <p class="hint">追尾中は、同じ移動手段が続く区間の実際の速さと広がり、そして再生倍率で縮尺が決まります。地図を操作すると解除されます。</p>
+    <p class="hint">自動変更では、同じ移動手段が続く区間の実際の速さと広がり、そして再生倍率で縮尺が決まります。固定では、地図の縮尺は再生の間ずっと変わりません。どちらも地図を操作すると追尾は解除されます。</p>
   </section>
 
   <section id="options-section" class="disabled">
@@ -1325,6 +1364,7 @@ const anim = {
   zoomFrom: 12,     // 遷移の開始値
   zoomTo: 12,       // 遷移の目標値
   zoomAt: 0,        // 遷移を始めた時刻(0 なら遷移していない)
+  zoomDirty: false, // 縮尺の決め方が変わった。次のカメラ更新で取り直す
   leg: -1,          // 追尾中に見ている leg。変わったら縮尺を取り直す
 };
 
@@ -1341,6 +1381,7 @@ fillTimeOptions(toTimeEl);
 const playBtn = $("play"), seekEl = $("seek"), speedEl = $("speed"), clockEl = $("clock");
 const smoothEl = $("smooth"), despikeEl = $("despike"), followEl = $("follow"), connectEl = $("connect");
 const skipEl = $("skip"), holdEl = $("hold"), exportBtn = $("export");
+const zoomAutoEl = $("zoom-auto"), zoomFixedEl = $("zoom-fixed"), scaleEl = $("scale");
 
 function setStatus(msg, isError) {
   statusEl.textContent = msg || "";
@@ -1782,6 +1823,25 @@ function maxZoomFor(rate) {
  */
 const EQUATOR_M_PER_PX = 78271.516964;
 
+/*
+ * 「10,000分の1」のような縮尺は、画面の 1px が地面の何 m を映すかで決まる。
+ * 1px が現実に何 mm かは画面ごとに違うが、地図の世界では OGC の標準に倣って
+ * 0.28mm として扱う慣習があるので、それに合わせる。紙の地図に定規を当てたのと
+ * 厳密に同じ長さになるわけではない、名目上の縮尺。
+ *
+ * メルカトル図法では北へ行くほど地面が引き伸ばされるので、同じ縮尺でもズームは
+ * 緯度で変わる。取り直すのは縮尺を選んだ瞬間だけにして、そのまま保つ。現在地の
+ * 緯度で毎フレーム取り直すと、南北に動く間ずっと僅かにズームし続けて画面が
+ * 落ち着かない ("固定" と言いながら動く)。
+ */
+const MM_PER_PX = 0.28;
+
+function zoomForScale(denominator, lat) {
+  const groundPerPx = (denominator * MM_PER_PX) / 1000; // 1px が映す地面の m
+  const z = Math.log2((EQUATOR_M_PER_PX * Math.cos((lat * Math.PI) / 180)) / groundPerPx);
+  return Math.max(map.getMinZoom(), Math.min(map.getMaxZoom(), z));
+}
+
 /**
  * 再生順に並べた単位 (経路と、その直前の空白) を移動手段で束ねて leg を作る。
  * 空白は前後どちらの手段とも違いうる (徒歩と徒歩の間を飛行機で埋めることも
@@ -1896,15 +1956,31 @@ function easedZoom() {
   return anim.zoomFrom + (anim.zoomTo - anim.zoomFrom) * eased;
 }
 
+/**
+ * 今この瞬間に合わせるべきズーム。固定なら選んだ縮尺、自動なら leg から決める。
+ *
+ * 固定の「自動」は、今の地図の縮尺をそのまま保つという意味。地図を操作して
+ * 決めた寄り具合のまま追わせたいときのための選択肢なので、こちらから値を
+ * 決めてはいけない。
+ */
+function desiredZoom(legIndex) {
+  if (!zoomFixedEl.checked) return targetZoom(legIndex);
+  const denominator = Number(scaleEl.value);
+  return denominator ? zoomForScale(denominator, state.flat[headIndex()].lat) : anim.zoom;
+}
+
 /** snap=true は再生開始時と再生倍率の変更時に、その場で取り直すための指定 */
 function updateCamera(snap) {
   if (!followEl.checked || state.flat.length < 2) return;
 
   const leg = currentLeg();
-  if (snap || leg !== anim.leg) {
-    anim.leg = leg;
-    setZoomTarget(targetZoom(leg), snap);
+  // 固定のときは leg が変わっても縮尺は動かさない。取り直すのは、再生開始などの
+  // snap と、縮尺の決め方そのものを変えたとき (zoomDirty) だけ。
+  if (snap || anim.zoomDirty || (leg !== anim.leg && !zoomFixedEl.checked)) {
+    anim.zoomDirty = false;
+    setZoomTarget(desiredZoom(leg), snap);
   }
+  anim.leg = leg; // 縮尺を変えなくても、速度の表示には今の leg を使う
   anim.zoom = easedZoom();
   map.jumpTo({ center: headPosition(anim.t), zoom: anim.zoom });
 }
@@ -1987,8 +2063,9 @@ function frame(now) {
   anim.lastFrame = now;
 
   // 縮尺が動いている間は時間を止める。そうしないと、移動手段が変わって
-  // 縮尺が追いついた頃にはその区間の移動が終わっている。
-  if (!(holdEl.checked && anim.zoomAt)) {
+  // 縮尺が追いついた頃にはその区間の移動が終わっている。縮尺を固定して
+  // いるときは、そもそも勝手には動かないので待たない。
+  if (!(holdEl.checked && zoomAutoEl.checked && anim.zoomAt)) {
     anim.t += dt * (Number(speedEl.value) || 3600);
     if (skipEl.checked) skipIdle();
   }
@@ -2160,13 +2237,34 @@ map.on("mouseleave", "routes-line", () => { map.getCanvas().style.cursor = ""; }
 // イベントは飛ぶので、originalEvent の有無で人の操作かどうかを見分ける。
 for (const ev of ["dragstart", "zoomstart", "rotatestart", "pitchstart"]) {
   map.on(ev, (e) => {
-    if (e.originalEvent && followEl.checked) followEl.checked = false;
+    if (e.originalEvent && followEl.checked) { followEl.checked = false; syncFollowUI(); }
   });
 }
 
+/** 追尾にぶら下がる選択の、出し入れと有効・無効 */
+function syncFollowUI() {
+  $("follow-sub").hidden = !followEl.checked;
+  $("zoom-auto-sub").classList.toggle("off", !zoomAutoEl.checked);
+  $("zoom-fixed-sub").classList.toggle("off", !zoomFixedEl.checked);
+  holdEl.disabled = !zoomAutoEl.checked;
+  scaleEl.disabled = !zoomFixedEl.checked;
+}
+syncFollowUI();
+
 followEl.addEventListener("change", () => {
+  syncFollowUI();
   if (followEl.checked) { anim.zoom = map.getZoom(); updateCamera(true); }
 });
+
+// 縮尺の決め方を変えたら、次の leg を待たずに取り直す。止まっている間は
+// 遷移を進めるものが誰もいないので、その場で合わせる。
+for (const el of [zoomAutoEl, zoomFixedEl, scaleEl]) {
+  el.addEventListener("change", () => {
+    syncFollowUI();
+    anim.zoomDirty = true;
+    updateCamera(!anim.playing);
+  });
+}
 
 // 再生倍率を変えると見かけの速度が桁で変わる。徐々に追従させると、
 // その間に現在地が画面外へ出るので即座に合わせる。
