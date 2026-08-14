@@ -62,6 +62,7 @@
     overflow-y: auto;
     overscroll-behavior: contain;
   }
+  #map-wrap { position: relative; min-height: 0; }
   #map { height: 100%; background: var(--sunken); }
 
   ::selection { background: #17191d; color: #fff; }
@@ -354,6 +355,24 @@
     color: var(--ink);
   }
   .maplibregl-ctrl-group { border-radius: 6px !important; box-shadow: 0 1px 4px rgba(23,25,29,.16) !important; }
+
+  /* 拡大縮小 (右上) と同じ姿で、出典表示の上に置く */
+  #share {
+    position: absolute; right: 10px; bottom: 34px;
+    width: 32px; height: 32px; padding: 0;
+    display: grid; place-items: center;
+    border: 0; border-radius: 6px;
+    background: var(--field); color: var(--ink);
+    box-shadow: 0 1px 4px rgba(23, 25, 29, .16);
+    cursor: pointer;
+    transition: background .12s, opacity .15s;
+  }
+  #share:hover { background: var(--sunken); }
+  #share:active { background: var(--line); }
+  #share:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  /* 経路が無いうちは押しても何も作れない */
+  #share:disabled { opacity: 0; pointer-events: none; }
+  #share.busy { color: var(--ink-3); cursor: default; }
   .editor-when { font-size: 11px; color: var(--ink-2); margin-bottom: 8px; }
   .editor select { font-size: 12px; }
 
@@ -367,7 +386,7 @@
       grid-template-columns: 1fr;
       grid-template-rows: var(--split, 46vh) auto 1fr;
     }
-    #map { order: 1; }
+    #map-wrap { order: 1; }
     #split { order: 2; }
     #sidebar { order: 3; border-right: none; }
     .masthead { position: static; }
@@ -543,7 +562,17 @@
   </footer>
 </div>
 
-<div id="map"></div>
+<div id="map-wrap">
+  <div id="map"></div>
+  <button id="share" type="button" disabled aria-label="今の地図を画像で保存">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M8.5 6H6.5A1.5 1.5 0 0 0 5 7.5v11A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-11A1.5 1.5 0 0 0 17.5 6h-2" />
+      <path d="M12 14.5V3.5" />
+      <path d="M8.6 6.9 12 3.5l3.4 3.4" />
+    </svg>
+  </button>
+</div>
 
 <!-- 狭い画面でだけ現れる、地図と操作パネルの境界。上下にドラッグして比率を変える。 -->
 <div id="split" role="separator" aria-orientation="horizontal" tabindex="0"
@@ -1117,6 +1146,9 @@ const map = new maplibregl.Map({
   center: [139.7671, 35.6812],
   zoom: 9,
   attributionControl: { compact: false },
+  // 共有画像で canvas を読み出すため。これが無いと描いた直後以外は
+  // 中身が捨てられていて、真っ黒な画が取れる。
+  preserveDrawingBuffer: true,
 });
 map.addControl(new maplibregl.NavigationControl(), "top-right");
 map.addControl(new maplibregl.ScaleControl(), "bottom-left");
@@ -1341,6 +1373,7 @@ const state = {
   segments: [],    // 読み込んだ元データ。書き出しのために保持する
   edits: new Set(),// 移動手段を書き換えたセグメントの番号
   removed: 0,      // 計測誤差として除去した地点数
+  summary: null,   // 今描いている期間と統計 (共有画像に載せる)
   smooth: 0,       // なめらか化の反復回数
   flat: [],        // 再生用に時刻順へ平坦化した地点列
   spanOf: null,    // flat の index → 何番目の経路か (Uint32Array)
@@ -1380,7 +1413,7 @@ fillTimeOptions(fromTimeEl);
 fillTimeOptions(toTimeEl);
 const playBtn = $("play"), seekEl = $("seek"), speedEl = $("speed"), clockEl = $("clock");
 const smoothEl = $("smooth"), despikeEl = $("despike"), followEl = $("follow"), connectEl = $("connect");
-const skipEl = $("skip"), holdEl = $("hold"), exportBtn = $("export");
+const skipEl = $("skip"), holdEl = $("hold"), exportBtn = $("export"), shareBtn = $("share");
 const zoomAutoEl = $("zoom-auto"), zoomFixedEl = $("zoom-fixed"), scaleEl = $("scale");
 
 function setStatus(msg, isError) {
@@ -1420,12 +1453,18 @@ function updateExportButton() {
  */
 function exportJSON() {
   const text = JSON.stringify({ semanticSegments: state.segments });
-  const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  saveBlob(new Blob([text], { type: "application/json" }), "timeline-edited.json");
+}
+
+/** ブラウザに名前付きで保存させる */
+function saveBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "timeline-edited.json";
+  link.download = name;
   link.click();
-  URL.revokeObjectURL(url);
+  // 画像は JSON より大きく、click の直後だと保存が始まる前に消えることがある
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 /** 進捗を出し、ブラウザに描画の機会を渡してから次の処理へ進む */
@@ -1585,6 +1624,10 @@ function render() {
   $("s-time").textContent = view.length ? fmtDuration(duration) : "–";
   $("s-tracks").textContent = selected.length.toLocaleString();
   $("s-points").textContent = total.toLocaleString();
+
+  // 共有画像は今この瞬間の地図に添える値なので、描いたときの値を控えておく
+  state.summary = view.length ? { fromMs, toMs, distance, duration, byCategory } : null;
+  shareBtn.disabled = !state.summary;
 
   if (!view.length) {
     setStatus("この期間には移動経路がありません。");
@@ -2396,6 +2439,225 @@ window.addEventListener("resize", () => {
     setSplit(mapEl.offsetHeight);
   }
 });
+
+/* ============================================================
+ * 共有画像
+ *
+ * 今見えている地図をそのまま画に取り、その下に期間・統計・移動手段を
+ * 組んで 1 枚の PNG にする。地図の canvas は WebGL なので、読み出せる
+ * ように Map の preserveDrawingBuffer を立ててある。
+ *
+ * 組み立ては canvas の中だけで済ませる。画像を作るためにデータを外へ
+ * 出さない、という点は読み込みと同じ。
+ * ============================================================ */
+
+// これ以上大きくしても共有先では活かず、PNG が重くなるだけ
+const SHARE_MAX_WIDTH = 2048;
+
+/** 出典。タイル提供元を差し替えても付いてくるよう、地図の表示から読む */
+function attributionText() {
+  const el = document.querySelector(".maplibregl-ctrl-attrib-inner");
+  const text = el ? el.textContent.replace(/\s+/g, " ").trim() : "";
+  return text || "© OpenStreetMap contributors";
+}
+
+/** 1 フレーム描かせて、その中身を 2D の canvas に写し取る */
+function captureMap() {
+  return new Promise((resolve) => {
+    map.once("render", () => {
+      const src = map.getCanvas();
+      const shot = document.createElement("canvas");
+      shot.width = src.width;
+      shot.height = src.height;
+      shot.getContext("2d").drawImage(src, 0, 0);
+      resolve(shot);
+    });
+    map.triggerRepaint();
+  });
+}
+
+/**
+ * 地図の画に情報の帯を足して 1 枚にする。
+ *
+ * 帯の高さは中身で決まる (移動手段の数と、出典の長さ) ので、位置を先に
+ * 出してから描く。文字は CSS と同じ寸法で書き、出力の倍率 u() で掛ける。
+ */
+function composeShareImage(shot) {
+  const sum = state.summary;
+  const cssW = mapEl.clientWidth || shot.width;
+
+  // 端末の画素密度ぶん細かく描く。広い画面では上限で抑える。
+  const k = Math.min(shot.width / cssW, SHARE_MAX_WIDTH / cssW);
+  const W = Math.round(cssW * k);
+  const mapH = Math.round(shot.height * (W / shot.width));
+
+  // 狭い画面では文字と余白を少しだけ詰める
+  const dense = cssW < 420 ? 0.88 : 1;
+  const u = (v) => v * k * dense;
+  const face = '-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Arial, sans-serif';
+  const font = (size, weight) => `${weight || 400} ${u(size)}px ${face}`;
+
+  const css = getComputedStyle(document.documentElement);
+  const c = (name) => css.getPropertyValue("--" + name).trim();
+  const hair = Math.max(1, Math.round(u(1)));
+
+  const PAD = u(20);
+  const measure = document.createElement("canvas").getContext("2d");
+
+  // 使っていない手段と「その他・不明」は出さない
+  const DOT = u(7), DOT_GAP = u(6), CHIP_GAP = u(16), CHIP_LINE = u(19);
+  measure.font = font(11.5);
+  const chips = CATEGORIES
+    .filter((m) => m !== "other" && sum.byCategory[m] > 0)
+    .map((m) => {
+      const text = `${CATEGORY_LABEL[m]} ${fmtDistance(sum.byCategory[m])}`;
+      return { m, text, w: DOT + DOT_GAP + measure.measureText(text).width };
+    });
+
+  // 幅は地図に合わせて決まるので、手段が多ければ折り返す
+  const rows = [[]];
+  let rowW = 0;
+  for (const chip of chips) {
+    const last = rows[rows.length - 1];
+    const need = (last.length ? CHIP_GAP : 0) + chip.w;
+    if (last.length && rowW + need > W - PAD * 2) {
+      rows.push([chip]);
+      rowW = chip.w;
+    } else {
+      last.push(chip);
+      rowW += need;
+    }
+  }
+
+  // 出典が長ければ、ツール名と同じ行に載せず下へ回す
+  measure.font = font(10);
+  const brand = "Timeline Visualizer";
+  const attrib = attributionText();
+  const footWrap =
+    measure.measureText(brand).width + measure.measureText(attrib).width + u(20) > W - PAD * 2;
+
+  // 帯が地図を圧迫しないよう、行はこれ以上詰められないところまで詰める。
+  // 期間だけは値が長いので、見出しを上ではなく同じ行の頭に置いて 1 行で済ます。
+  const yRange = u(18);
+  const yStatLabel = yRange + u(20) + u(14);
+  const yStatValue = yStatLabel + u(14);
+  const yChips = yStatValue + u(26) + (chips.length ? u(14) : 0);
+  const yRule = yChips + (chips.length ? CHIP_LINE * rows.length : 0) + u(14);
+  const panelH = yRule + (footWrap ? u(40) : u(26));
+
+  const out = document.createElement("canvas");
+  out.width = W;
+  out.height = mapH + panelH;
+  const g = out.getContext("2d");
+
+  g.imageSmoothingQuality = "high"; // 上限で縮めるときに線がざらつかないように
+  g.drawImage(shot, 0, 0, W, mapH);
+
+  const top = mapH;
+  g.fillStyle = c("bg");
+  g.fillRect(0, top, W, panelH);
+  g.fillStyle = c("line");
+  g.fillRect(0, top, W, hair);
+  g.textBaseline = "top";
+
+  // 期間
+  g.fillStyle = c("ink-3");
+  g.font = font(10.5);
+  g.fillText("期間", PAD, top + yRange + u(3));
+  measure.font = font(10.5);
+  g.fillStyle = c("ink");
+  g.font = font(14.5);
+  g.fillText(
+    `${fmtClock.format(new Date(sum.fromMs))} → ${fmtClock.format(new Date(sum.toMs))}`,
+    PAD + measure.measureText("期間").width + u(9), top + yRange
+  );
+
+  // 統計
+  [
+    { k: "移動距離", v: fmtDistance(sum.distance) },
+    { k: "移動時間", v: fmtDuration(sum.duration) },
+  ].forEach((stat, i) => {
+    const x = i === 0 ? PAD : Math.round(W / 2);
+    g.fillStyle = c("ink-3");
+    g.font = font(10.5);
+    g.fillText(stat.k, x, top + yStatLabel);
+    g.fillStyle = c("ink");
+    g.font = font(19.5, 600);
+    g.fillText(stat.v, x, top + yStatValue);
+  });
+
+  // 移動手段
+  rows.forEach((row, i) => {
+    const y = top + yChips + i * CHIP_LINE;
+    let x = PAD;
+    for (const chip of row) {
+      g.fillStyle = CATEGORY_COLOR[chip.m];
+      g.beginPath();
+      g.arc(x + DOT / 2, y + u(8), DOT / 2, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = c("ink-2");
+      g.font = font(11.5);
+      g.fillText(chip.text, x + DOT + DOT_GAP, y + u(2));
+      x += chip.w + CHIP_GAP;
+    }
+  });
+
+  // ツール名と出典
+  g.fillStyle = c("line");
+  g.fillRect(PAD, top + yRule, W - PAD * 2, hair);
+  g.fillStyle = c("ink-3");
+  g.font = font(10);
+  g.fillText(brand, PAD, top + yRule + u(9));
+  if (footWrap) {
+    g.fillText(attrib, PAD, top + yRule + u(23));
+  } else {
+    g.textAlign = "right";
+    g.fillText(attrib, W - PAD, top + yRule + u(9));
+    g.textAlign = "left";
+  }
+
+  return out;
+}
+
+function shareFileName(sum) {
+  const from = dayKey(sum.fromMs), to = dayKey(sum.toMs);
+  return `timeline-${from === to ? from : from + "_" + to}.png`;
+}
+
+async function shareMapImage() {
+  if (!state.summary || shareBtn.classList.contains("busy")) return;
+  shareBtn.classList.add("busy");
+  shareBtn.disabled = true;
+  try {
+    const sum = state.summary;
+    const canvas = composeShareImage(await captureMap());
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("画像を作れませんでした"))), "image/png");
+    });
+    const name = shareFileName(sum);
+    const file = new File([blob], name, { type: "image/png" });
+
+    // 共有シートがあるならそこへ渡す。写真に保存するのも送るのも選べる。
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file] });
+        return; // 保存も送信も共有シートの側で終わる
+      } catch (err) {
+        if (err && err.name === "AbortError") return; // 閉じただけ
+        // シートが開けなかったときは、そのままダウンロードへ落とす
+      }
+    }
+    saveBlob(blob, name);
+    setStatus(`${name} を保存しました。`);
+  } catch (err) {
+    setStatus("画像を保存できませんでした: " + (err && err.message ? err.message : err), true);
+  } finally {
+    shareBtn.classList.remove("busy");
+    shareBtn.disabled = !state.summary;
+  }
+}
+
+shareBtn.addEventListener("click", shareMapImage);
 </script>
 </body>
 </html>
