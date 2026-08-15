@@ -1196,6 +1196,13 @@ const EMPTY = { type: "FeatureCollection", features: [] };
 
 const mapReady = new Promise((resolve) => {
   map.on("load", () => {
+    // 係争中の国境は描かない。
+    // OpenMapTiles では北方領土の線が z1〜4 でだけ disputed=1 の陸上国境として
+    // 入っていて、positron の boundary_disputed が破線で描く。z5 以上では同じ線が
+    // maritime=1 になり、どの層のフィルタからも外れて元から描かれない。
+    // つまり縮尺によって国境の扱いが変わっていた。ここで消すと全域で揃う。
+    if (map.getLayer("boundary_disputed")) map.removeLayer("boundary_disputed");
+
     map.addSource("routes", { type: "geojson", data: EMPTY });
     map.addSource("gaps", { type: "geojson", data: EMPTY });
     map.addSource("traveled", { type: "geojson", data: EMPTY });
