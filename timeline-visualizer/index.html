@@ -654,6 +654,13 @@ const CATEGORY_OF_TYPE = {
   FLYING: "air", IN_FERRY: "air", SAILING: "air",
 };
 
+// 端末によって type の書式が違う。Android は IN_PASSENGER_VEHICLE、
+// iPhone は "in passenger vehicle"。座標(parseLatLng)と同じく書式差を吸収する。
+const normalizeType = (type) =>
+  typeof type === "string" && type.trim()
+    ? type.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "_")
+    : null;
+
 const categoryOf = (type) => CATEGORY_OF_TYPE[type] || "other";
 const CATEGORIES = ["walk", "bike", "car", "transit", "air", "other"];
 
@@ -855,6 +862,7 @@ function parseTimeline(json) {
   const paths = [];      // timelinePath を持つセグメント
   const activities = []; // 移動手段のメタ情報
   const visits = [];
+  const unknownTypes = new Set(); // 表に無い type。書式違いに気づけるよう控えておく
   let skipped = 0;
 
   segments.forEach((seg, segIndex) => {
@@ -864,7 +872,11 @@ function parseTimeline(json) {
 
     // activity は timelinePath と同じセグメントに同居することが多い。
     // 先に読んでおかないと移動手段が取れず、すべて「その他」になる。
-    const ownType = (seg.activity && seg.activity.topCandidate && seg.activity.topCandidate.type) || null;
+    const rawType = (seg.activity && seg.activity.topCandidate && seg.activity.topCandidate.type) || null;
+    const ownType = normalizeType(rawType);
+    // type が付いていない経路は数えない(正常な Android データでも出てしまう)。
+    // 診断に効くのは正規化前の文字列なので、そちらを控える。
+    if (ownType && !CATEGORY_OF_TYPE[ownType]) unknownTypes.add(rawType);
 
     if (Array.isArray(seg.timelinePath) && seg.timelinePath.length) {
       const points = [];
@@ -968,7 +980,7 @@ function parseTimeline(json) {
   // 地図上でクリックされた線から経路を引けるよう、安定した番号を振る
   valid.forEach((t, i) => { t.id = i; });
 
-  return { tracks: valid, visits, skipped, segments };
+  return { tracks: valid, visits, skipped, segments, unknownTypes: [...unknownTypes] };
 }
 
 /* ============================================================
@@ -1417,6 +1429,7 @@ const state = {
   view: [],        // 絞り込み + 間引き済み
   gaps: [],        // 経路番号ごとの、直前の経路との空白をつなぐ線
   segments: [],    // 読み込んだ元データ。書き出しのために保持する
+  unknownTypes: [],// 表に無かった移動手段の型名 (書式違いに気づくため)
   edits: new Set(),// 移動手段を書き換えたセグメントの番号
   removed: 0,      // 計測誤差として除去した地点数
   summary: null,   // 今描いている期間と統計 (共有画像に載せる)
@@ -1545,6 +1558,7 @@ async function loadFile(file) {
 
   state.tracks = parsed.tracks;
   state.segments = parsed.segments;
+  state.unknownTypes = parsed.unknownTypes;
   state.edits = new Set();
   updateExportButton();
   state.dayIndex = buildDayIndex(parsed.tracks);
@@ -1683,6 +1697,9 @@ function render() {
     if (gaps.features && gaps.features.length) notes.push(`途切れ ${gaps.features.length.toLocaleString()} 箇所を点線で接続`);
     if (thinned) notes.push(`${original.toLocaleString()} 点から間引き`);
     if (removed) notes.push(`飛び値 ${removed.toLocaleString()} 点を除去 (${(removed / rawPoints * 100).toFixed(1)}%)`);
+    if (state.unknownTypes && state.unknownTypes.length) {
+      notes.push(`判別できない移動手段 ${state.unknownTypes.length} 種 (${state.unknownTypes.slice(0, 2).join(", ")})`);
+    }
     setStatus(notes.join(" / "));
   }
 
