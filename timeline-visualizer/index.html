@@ -9,6 +9,8 @@
 <meta property="og:type" content="website" />
 <meta property="og:title" content="Timeline Visualizer" />
 <meta property="og:description" content="Google マップのタイムラインを、移動手段ごとに色分けした地図で振り返る。選んだファイルの中身は端末の外に出ません。" />
+<!-- 上の title / description / og:* は JS 未実行時の初期表示 (ja)。
+     applyLang() が起動時に、選ばれた言語のものへ書き換える。 -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2317191d'/%3E%3Cpath d='M4 10.5 12 7.5 20 10.5 28 7.5v14L20 24.5 12 21.5 4 24.5z' fill='%23fff'/%3E%3Cpath d='M12 7.5v14M20 10.5v14' stroke='%2317191d' stroke-width='1.4'/%3E%3C/svg%3E" />
 <!-- MapLibre は vendor/ に置いて自前で配信する。CDN から読むと、そこが落ちた
      日に地図が一切描けずツールごと死ぬ。ファイルは npm の配布物そのままで、
@@ -106,11 +108,32 @@
     border-bottom: 1px solid var(--line);
   }
   .masthead svg { flex: none; display: block; }
+  .masthead .title { min-width: 0; }
   h1 {
     font-size: 14px; font-weight: 600; letter-spacing: -.005em;
     margin: 0; line-height: 1.3;
   }
   .sub { color: var(--ink-2); font-size: 11px; margin: 1px 0 0; }
+
+  /* ---- 言語切替 ----
+     ツールの配色は無彩色に徹しているので (下の :root のコメント参照)、
+     ランディングページの青い .lang-switch は使わず、統計・凡例と同じ
+     ink 系の色だけで表す。選ばれていない方は --ink-3 で沈める。 */
+  .lang-toggle {
+    margin-left: auto; flex: none;
+    display: flex; gap: 2px;
+  }
+  .lang-toggle button {
+    padding: 4px 7px; font: inherit; font-size: 10px; font-weight: 600;
+    letter-spacing: .04em; text-transform: uppercase;
+    border: 1px solid transparent; border-radius: var(--r);
+    background: transparent; color: var(--ink-3); cursor: pointer;
+    transition: color .12s, background .12s;
+  }
+  .lang-toggle button:hover { color: var(--ink); }
+  .lang-toggle button[aria-pressed="true"] {
+    color: var(--ink); background: var(--sunken);
+  }
 
   section { border-top: 1px solid var(--line); padding: 18px var(--pad); }
   section:first-of-type { border-top: none; }
@@ -458,144 +481,148 @@
       <path d="M4 10.5 12 7.5 20 10.5 28 7.5v14L20 24.5 12 21.5 4 24.5z" fill="#fff" />
       <path d="M12 7.5v14M20 10.5v14" stroke="#17191d" stroke-width="1.4" />
     </svg>
-    <div>
+    <div class="title">
       <h1>Timeline Visualizer</h1>
-      <p class="sub">Google マップのタイムラインを地図で描く</p>
+      <p class="sub" data-i18n="masthead.sub">Google マップのタイムラインを地図で描く</p>
+    </div>
+    <div class="lang-toggle" role="group" data-i18n-aria="lang.toggleAria" aria-label="表示言語">
+      <button type="button" id="lang-ja" aria-pressed="true">JA</button>
+      <button type="button" id="lang-en" aria-pressed="false">EN</button>
     </div>
   </header>
 
   <section>
     <div id="drop">
-      <strong>JSON をドロップ</strong>
-      またはクリックしてファイルを選択
+      <strong data-i18n="drop.title">JSON をドロップ</strong>
+      <span data-i18n="drop.sub">またはクリックしてファイルを選択</span>
     </div>
     <input type="file" id="file" accept=".json,application/json" />
     <div id="status"></div>
     <div class="privacy">
-      <p>選択したファイルの中身は、読込みから地図上への描画まで、<b>すべてお使いの端末の中だけ</b>で処理されます。外部に送信されることも、保存されることもありません。</p>
+      <p data-i18n-html="privacy.html">選択したファイルの中身は、読込みから地図上への描画まで、<b>すべてお使いの端末の中だけ</b>で処理されます。外部に送信されることも、保存されることもありません。</p>
     </div>
     <details class="howto">
-      <summary>タイムラインの書き出し方</summary>
+      <summary data-i18n="howto.summary">タイムラインの書き出し方</summary>
       <h3>iPhone</h3>
-      <p>Google マップアプリ →&nbsp;プロフィール写真 →&nbsp;設定 →&nbsp;個人的なコンテンツ →&nbsp;<b>タイムライン データをエクスポート</b> →&nbsp;ファイルに保存</p>
+      <p data-i18n-html="howto.iphone.html">Google マップアプリ →&nbsp;プロフィール写真 →&nbsp;設定 →&nbsp;個人的なコンテンツ →&nbsp;<b>タイムライン データをエクスポート</b> →&nbsp;ファイルに保存</p>
       <h3>Android</h3>
-      <p>マップアプリではなく<b>端末の設定</b>から。設定 →&nbsp;位置情報 →&nbsp;位置情報サービス →&nbsp;タイムライン →&nbsp;<b>タイムライン データをエクスポート</b> →&nbsp;続行 →&nbsp;保存先を選ぶ</p>
-      <p class="note">保存されるのは location-history.json です。項目名は端末や時期によって多少異なる場合があります。</p>
+      <p data-i18n-html="howto.android.html">マップアプリではなく<b>端末の設定</b>から。設定 →&nbsp;位置情報 →&nbsp;位置情報サービス →&nbsp;タイムライン →&nbsp;<b>タイムライン データをエクスポート</b> →&nbsp;続行 →&nbsp;保存先を選ぶ</p>
+      <p class="note" data-i18n="howto.note">保存されるのは location-history.json です。項目名は端末や時期によって多少異なる場合があります。</p>
     </details>
   </section>
 
   <section id="range-section" class="disabled">
-    <h2>期間</h2>
+    <h2 data-i18n="range.h">期間</h2>
     <div class="field">
-      <label for="from">開始</label>
+      <label for="from" data-i18n="range.from">開始</label>
       <div class="row">
         <input type="date" id="from" />
-        <select id="from-time" aria-label="開始時刻"></select>
+        <select id="from-time" data-i18n-aria="range.fromAria" aria-label="開始時刻"></select>
       </div>
     </div>
     <div class="field">
-      <label for="to">終了</label>
+      <label for="to" data-i18n="range.to">終了</label>
       <div class="row">
         <input type="date" id="to" />
-        <select id="to-time" aria-label="終了時刻"></select>
+        <select id="to-time" data-i18n-aria="range.toAria" aria-label="終了時刻"></select>
       </div>
     </div>
     <div class="presets">
-      <button data-preset="7">7日</button>
-      <button data-preset="30">30日</button>
-      <button data-preset="365">1年</button>
-      <button data-preset="all">全期間</button>
+      <button data-preset="7" data-i18n="range.preset7">7日</button>
+      <button data-preset="30" data-i18n="range.preset30">30日</button>
+      <button data-preset="365" data-i18n="range.preset365">1年</button>
+      <button data-preset="all" data-i18n="range.presetAll">全期間</button>
     </div>
   </section>
 
   <section id="stats-section" class="disabled">
-    <h2>統計</h2>
+    <h2 data-i18n="stats.h">統計</h2>
     <div class="stats">
-      <div class="stat"><div class="k">移動距離</div><div class="v" id="s-dist">–</div></div>
-      <div class="stat"><div class="k">移動時間</div><div class="v" id="s-time">–</div></div>
-      <div class="stat"><div class="k">経路</div><div class="v" id="s-tracks">–</div></div>
-      <div class="stat"><div class="k">地点数</div><div class="v" id="s-points">–</div></div>
+      <div class="stat"><div class="k" data-i18n="stats.dist">移動距離</div><div class="v" id="s-dist">–</div></div>
+      <div class="stat"><div class="k" data-i18n="stats.time">移動時間</div><div class="v" id="s-time">–</div></div>
+      <div class="stat"><div class="k" data-i18n="stats.tracks">経路</div><div class="v" id="s-tracks">–</div></div>
+      <div class="stat"><div class="k" data-i18n="stats.points">地点数</div><div class="v" id="s-points">–</div></div>
     </div>
   </section>
 
   <section>
-    <h2>移動手段</h2>
+    <h2 data-i18n="legend.h">移動手段</h2>
     <div class="legend">
-      <div><span class="swatch" style="background:var(--walk)"></span>徒歩・ランニング<b id="d-walk">–</b></div>
-      <div><span class="swatch" style="background:var(--bike)"></span>自転車<b id="d-bike">–</b></div>
-      <div><span class="swatch" style="background:var(--car)"></span>自動車・バイク<b id="d-car">–</b></div>
-      <div><span class="swatch" style="background:var(--transit)"></span>電車・バス<b id="d-transit">–</b></div>
-      <div><span class="swatch" style="background:var(--air)"></span>飛行機・船<b id="d-air">–</b></div>
-      <div><span class="swatch" style="background:var(--other)"></span>その他・不明<b id="d-other">–</b></div>
-      <div><span class="swatch dashed"></span>記録が途切れた区間<b>破線</b></div>
+      <div><span class="swatch" style="background:var(--walk)"></span><span data-i18n="legend.walk">徒歩・ランニング</span><b id="d-walk">–</b></div>
+      <div><span class="swatch" style="background:var(--bike)"></span><span data-i18n="legend.bike">自転車</span><b id="d-bike">–</b></div>
+      <div><span class="swatch" style="background:var(--car)"></span><span data-i18n="legend.car">自動車・バイク</span><b id="d-car">–</b></div>
+      <div><span class="swatch" style="background:var(--transit)"></span><span data-i18n="legend.transit">電車・バス</span><b id="d-transit">–</b></div>
+      <div><span class="swatch" style="background:var(--air)"></span><span data-i18n="legend.air">飛行機・船</span><b id="d-air">–</b></div>
+      <div><span class="swatch" style="background:var(--other)"></span><span data-i18n="legend.other">その他・不明</span><b id="d-other">–</b></div>
+      <div><span class="swatch dashed"></span><span data-i18n="legend.gap">記録が途切れた区間</span><b data-i18n="legend.gapDashed">破線</b></div>
     </div>
   </section>
 
   <section id="player-section" class="disabled">
-    <h2>再生</h2>
+    <h2 data-i18n="player.h">再生</h2>
     <div class="player">
       <button id="play" disabled aria-label="再生"></button>
-      <input type="range" id="seek" min="0" max="1000" value="0" disabled aria-label="再生位置" />
+      <input type="range" id="seek" min="0" max="1000" value="0" disabled data-i18n-aria="player.seekAria" aria-label="再生位置" />
     </div>
     <div id="clock"></div>
     <div class="field">
-      <label for="speed">速度</label>
+      <label for="speed" data-i18n="player.speed">速度</label>
       <select id="speed">
-        <option value="60">1分 / 秒</option>
-        <option value="600">10分 / 秒</option>
-        <option value="1800">30分 / 秒</option>
-        <option value="3600" selected>1時間 / 秒</option>
-        <option value="21600">6時間 / 秒</option>
-        <option value="86400">1日 / 秒</option>
-        <option value="604800">1週間 / 秒</option>
+        <option value="60" data-i18n="player.speed.60">1分 / 秒</option>
+        <option value="600" data-i18n="player.speed.600">10分 / 秒</option>
+        <option value="1800" data-i18n="player.speed.1800">30分 / 秒</option>
+        <option value="3600" selected data-i18n="player.speed.3600">1時間 / 秒</option>
+        <option value="21600" data-i18n="player.speed.21600">6時間 / 秒</option>
+        <option value="86400" data-i18n="player.speed.86400">1日 / 秒</option>
+        <option value="604800" data-i18n="player.speed.604800">1週間 / 秒</option>
       </select>
     </div>
     <div class="checks" style="margin-top:14px">
-      <label class="check"><input type="checkbox" id="skip" checked />30分以上の停止を飛ばす</label>
-      <label class="check"><input type="checkbox" id="follow" />再生中に現在地を追う</label>
+      <label class="check"><input type="checkbox" id="skip" checked /><span data-i18n="player.skip">30分以上の停止を飛ばす</span></label>
+      <label class="check"><input type="checkbox" id="follow" /><span data-i18n="player.follow">再生中に現在地を追う</span></label>
       <div class="sub" id="follow-sub" hidden>
-        <label class="check"><input type="radio" name="zoom-mode" id="zoom-auto" checked />縮尺を自動変更する</label>
+        <label class="check"><input type="radio" name="zoom-mode" id="zoom-auto" checked /><span data-i18n="player.zoomAuto">縮尺を自動変更する</span></label>
         <div class="sub" id="zoom-auto-sub">
-          <label class="check"><input type="checkbox" id="hold" checked />縮尺の変更中は再生を止める</label>
+          <label class="check"><input type="checkbox" id="hold" checked /><span data-i18n="player.hold">縮尺の変更中は再生を止める</span></label>
         </div>
-        <label class="check"><input type="radio" name="zoom-mode" id="zoom-fixed" />縮尺を固定する</label>
+        <label class="check"><input type="radio" name="zoom-mode" id="zoom-fixed" /><span data-i18n="player.zoomFixed">縮尺を固定する</span></label>
         <div class="sub" id="zoom-fixed-sub">
-          <select id="scale" aria-label="固定する縮尺" disabled>
-            <option value="0" selected>自動(今の地図の縮尺)</option>
-            <option value="1000">1,000分の1</option>
-            <option value="5000">5,000分の1</option>
-            <option value="10000">10,000分の1</option>
-            <option value="25000">25,000分の1</option>
-            <option value="50000">50,000分の1</option>
-            <option value="100000">100,000分の1</option>
-            <option value="250000">250,000分の1</option>
-            <option value="500000">500,000分の1</option>
-            <option value="1000000">1,000,000分の1</option>
-            <option value="5000000">5,000,000分の1</option>
+          <select id="scale" data-i18n-aria="player.scaleAria" aria-label="固定する縮尺" disabled>
+            <option value="0" selected data-i18n="player.scale.auto">自動(今の地図の縮尺)</option>
+            <option value="1000" data-i18n="player.scale.1000">1,000分の1</option>
+            <option value="5000" data-i18n="player.scale.5000">5,000分の1</option>
+            <option value="10000" data-i18n="player.scale.10000">10,000分の1</option>
+            <option value="25000" data-i18n="player.scale.25000">25,000分の1</option>
+            <option value="50000" data-i18n="player.scale.50000">50,000分の1</option>
+            <option value="100000" data-i18n="player.scale.100000">100,000分の1</option>
+            <option value="250000" data-i18n="player.scale.250000">250,000分の1</option>
+            <option value="500000" data-i18n="player.scale.500000">500,000分の1</option>
+            <option value="1000000" data-i18n="player.scale.1000000">1,000,000分の1</option>
+            <option value="5000000" data-i18n="player.scale.5000000">5,000,000分の1</option>
           </select>
         </div>
       </div>
     </div>
-    <p class="hint">自動変更では、同じ移動手段が続く区間の実際の速さと広がり、そして再生倍率で縮尺が決まります。固定では、地図の縮尺は再生の間ずっと変わりません。どちらも地図を操作すると追尾は解除されます。</p>
+    <p class="hint" data-i18n="player.hint">自動変更では、同じ移動手段が続く区間の実際の速さと広がり、そして再生倍率で縮尺が決まります。固定では、地図の縮尺は再生の間ずっと変わりません。どちらも地図を操作すると追尾は解除されます。</p>
   </section>
 
   <section id="options-section" class="disabled">
-    <h2>表示</h2>
+    <h2 data-i18n="options.h">表示</h2>
     <div class="checks">
-      <label class="check"><input type="checkbox" id="smooth" checked />ポイント間をなめらかにする</label>
-      <label class="check"><input type="checkbox" id="despike" checked />計測誤差の点を除去する</label>
-      <label class="check"><input type="checkbox" id="connect" checked />途切れた区間を点線でつなぐ</label>
+      <label class="check"><input type="checkbox" id="smooth" checked /><span data-i18n="options.smooth">ポイント間をなめらかにする</span></label>
+      <label class="check"><input type="checkbox" id="despike" checked /><span data-i18n="options.despike">計測誤差の点を除去する</span></label>
+      <label class="check"><input type="checkbox" id="connect" checked /><span data-i18n="options.connect">途切れた区間を点線でつなぐ</span></label>
     </div>
   </section>
 
   <section id="edit-section" class="disabled">
-    <h2>移動手段の修正</h2>
-    <p class="hint" style="margin-top:0">地図上の経路をクリックすると移動手段を変更できます。</p>
-    <button id="export" class="wide" disabled>修正はまだありません</button>
+    <h2 data-i18n="edit.h">移動手段の修正</h2>
+    <p class="hint" style="margin-top:0" data-i18n="edit.hint">地図上の経路をクリックすると移動手段を変更できます。</p>
+    <button id="export" class="wide" disabled data-i18n="edit.exportNone">修正はまだありません</button>
   </section>
 
   <footer>
-    <a href="https://sites.google.com/view/passage-app-privacypolicy" target="_blank" rel="noopener">プライバシーポリシー</a>
+    <a href="https://sites.google.com/view/passage-app-privacypolicy" target="_blank" rel="noopener" data-i18n="footer.privacy">プライバシーポリシー</a>
   </footer>
 </div>
 
@@ -609,17 +636,389 @@
       <path d="M7.5 10.5 12 15l4.5-4.5" />
       <path d="M4.5 16.5v2A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5v-2" />
     </svg>
-    <span id="share-text">画像を保存</span>
+    <span id="share-text" data-i18n="share.save">画像を保存</span>
   </button>
 </div>
 
 <!-- 狭い画面でだけ現れる、地図と操作パネルの境界。上下にドラッグして比率を変える。 -->
 <div id="split" role="separator" aria-orientation="horizontal" tabindex="0"
-     aria-label="地図と操作パネルの高さの比率" aria-valuemin="0" aria-valuemax="100"></div>
+     data-i18n-aria="split.aria" aria-label="地図と操作パネルの高さの比率" aria-valuemin="0" aria-valuemax="100"></div>
 
 <script src="vendor/maplibre-gl-5.24.0.js"></script>
 <script>
 "use strict";
+
+/* ============================================================
+ * 多言語化 (i18n)
+ *
+ * 辞書 + キー方式。LP のような span 二重化はできない — 統計や状態表示など
+ * 多くの文字列が JS 側で組み立てられるため。ja/en は同じキー集合を持つ。
+ * data-i18n / data-i18n-html / data-i18n-aria を付けた要素は applyLang() が
+ * 一括で書き換える。マークアップ上の初期値は常に ja (JS 実行前でも白紙にしない)。
+ * ============================================================ */
+
+const I18N = {
+  ja: {
+    "meta.title": "Timeline Visualizer — Google マップのタイムラインを地図で描く",
+    "meta.description": "Google マップからエクスポートしたタイムライン JSON を、移動手段ごとに色分けした地図と再生アニメーションで振り返るツール。選んだファイルの中身は端末の中だけで処理され、外部に送信されません。",
+    "meta.ogTitle": "Timeline Visualizer",
+    "meta.ogDescription": "Google マップのタイムラインを、移動手段ごとに色分けした地図で振り返る。選んだファイルの中身は端末の外に出ません。",
+
+    "masthead.sub": "Google マップのタイムラインを地図で描く",
+    "lang.toggleAria": "表示言語",
+
+    "drop.title": "JSON をドロップ",
+    "drop.sub": "またはクリックしてファイルを選択",
+
+    "privacy.html": "選択したファイルの中身は、読込みから地図上への描画まで、<b>すべてお使いの端末の中だけ</b>で処理されます。外部に送信されることも、保存されることもありません。",
+
+    "howto.summary": "タイムラインの書き出し方",
+    "howto.iphone.html": "Google マップアプリ →&nbsp;プロフィール写真 →&nbsp;設定 →&nbsp;個人的なコンテンツ →&nbsp;<b>タイムライン データをエクスポート</b> →&nbsp;ファイルに保存",
+    "howto.android.html": "マップアプリではなく<b>端末の設定</b>から。設定 →&nbsp;位置情報 →&nbsp;位置情報サービス →&nbsp;タイムライン →&nbsp;<b>タイムライン データをエクスポート</b> →&nbsp;続行 →&nbsp;保存先を選ぶ",
+    "howto.note": "保存されるのは location-history.json です。項目名は端末や時期によって多少異なる場合があります。",
+
+    "range.h": "期間",
+    "range.from": "開始",
+    "range.fromAria": "開始時刻",
+    "range.to": "終了",
+    "range.toAria": "終了時刻",
+    "range.preset7": "7日",
+    "range.preset30": "30日",
+    "range.preset365": "1年",
+    "range.presetAll": "全期間",
+
+    "stats.h": "統計",
+    "stats.dist": "移動距離",
+    "stats.time": "移動時間",
+    "stats.tracks": "経路",
+    "stats.points": "地点数",
+
+    "legend.h": "移動手段",
+    "legend.walk": "徒歩・ランニング",
+    "legend.bike": "自転車",
+    "legend.car": "自動車・バイク",
+    "legend.transit": "電車・バス",
+    "legend.air": "飛行機・船",
+    "legend.other": "その他・不明",
+    "legend.gap": "記録が途切れた区間",
+    "legend.gapDashed": "破線",
+
+    "player.h": "再生",
+    "player.playAria": "再生",
+    "player.pauseAria": "一時停止",
+    "player.seekAria": "再生位置",
+    "player.speed": "速度",
+    "player.speed.60": "1分 / 秒",
+    "player.speed.600": "10分 / 秒",
+    "player.speed.1800": "30分 / 秒",
+    "player.speed.3600": "1時間 / 秒",
+    "player.speed.21600": "6時間 / 秒",
+    "player.speed.86400": "1日 / 秒",
+    "player.speed.604800": "1週間 / 秒",
+    "player.skip": "30分以上の停止を飛ばす",
+    "player.follow": "再生中に現在地を追う",
+    "player.zoomAuto": "縮尺を自動変更する",
+    "player.hold": "縮尺の変更中は再生を止める",
+    "player.zoomFixed": "縮尺を固定する",
+    "player.scaleAria": "固定する縮尺",
+    "player.scale.auto": "自動(今の地図の縮尺)",
+    "player.scale.1000": "1,000分の1",
+    "player.scale.5000": "5,000分の1",
+    "player.scale.10000": "10,000分の1",
+    "player.scale.25000": "25,000分の1",
+    "player.scale.50000": "50,000分の1",
+    "player.scale.100000": "100,000分の1",
+    "player.scale.250000": "250,000分の1",
+    "player.scale.500000": "500,000分の1",
+    "player.scale.1000000": "1,000,000分の1",
+    "player.scale.5000000": "5,000,000分の1",
+    "player.hint": "自動変更では、同じ移動手段が続く区間の実際の速さと広がり、そして再生倍率で縮尺が決まります。固定では、地図の縮尺は再生の間ずっと変わりません。どちらも地図を操作すると追尾は解除されます。",
+
+    "options.h": "表示",
+    "options.smooth": "ポイント間をなめらかにする",
+    "options.despike": "計測誤差の点を除去する",
+    "options.connect": "途切れた区間を点線でつなぐ",
+
+    "edit.h": "移動手段の修正",
+    "edit.hint": "地図上の経路をクリックすると移動手段を変更できます。",
+    "edit.exportNone": "修正はまだありません",
+    "edit.exportCount": "{n} 件の修正を含めて書き出す",
+    "edit.exportCountOne": "{n} 件の修正を含めて書き出す",
+
+    "share.save": "画像を保存",
+    "share.saving": "保存中…",
+    "share.saved": "{name} を保存しました。",
+    "share.failed": "画像を保存できませんでした: {msg}",
+    "share.blobFailed": "画像を作れませんでした",
+    "share.periodLabel": "期間",
+    "share.distLabel": "移動距離",
+    "share.timeLabel": "移動時間",
+
+    "split.aria": "地図と操作パネルの高さの比率",
+    "footer.privacy": "プライバシーポリシー",
+
+    "status.loading": "読み込み中… ({mb} MB)",
+    "status.parsing": "解析中… ({mb} MB)",
+    "status.building": "経路を構築中…",
+    "status.loaded": "{n} 件の経路 ({from} 〜 {to})",
+    "status.tracksPoints": "{tracks} 件の経路 / {points} 点",
+    "status.gapsConnected": "途切れ {n} 箇所を点線で接続",
+    "status.thinned": "{n} 点から間引き",
+    "status.despiked": "飛び値 {n} 点を除去 ({pct}%)",
+    "status.unknownTypes": "判別できない移動手段 {n} 種 ({sample})",
+
+    "err.badJson": "JSON として読めませんでした。",
+    "err.noSegments": "semanticSegments が見つかりません。スマホの Google マップアプリから書き出した location-history.json を選んでください。",
+    "err.noTracks": "移動経路が 1 件も見つかりませんでした。",
+    "err.noTracksInRange": "この期間には移動経路がありません。",
+
+    "category.walk": "徒歩",
+    "category.bike": "自転車",
+    "category.car": "自動車",
+    "category.transit": "電車・バス",
+    "category.air": "飛行機・船",
+    "category.other": "その他",
+
+    "edittype.WALKING": "徒歩",
+    "edittype.RUNNING": "ランニング",
+    "edittype.CYCLING": "自転車",
+    "edittype.IN_PASSENGER_VEHICLE": "自動車",
+    "edittype.MOTORCYCLING": "バイク",
+    "edittype.IN_BUS": "バス",
+    "edittype.IN_TRAIN": "電車",
+    "edittype.IN_SUBWAY": "地下鉄",
+    "edittype.IN_TRAM": "路面電車",
+    "edittype.FLYING": "飛行機",
+    "edittype.IN_FERRY": "船",
+    "edittype.UNKNOWN_ACTIVITY_TYPE": "不明",
+
+    "editor.whenSep": " 〜 ",
+  },
+
+  en: {
+    "meta.title": "Timeline Visualizer — Draw your Google Maps Timeline on a map",
+    "meta.description": "A tool for reliving the Timeline JSON exported from Google Maps as a map colour-coded by transport mode, with a playback animation. The file you select is processed entirely on your device and never sent anywhere.",
+    "meta.ogTitle": "Timeline Visualizer",
+    "meta.ogDescription": "Relive your Google Maps Timeline as a map colour-coded by transport mode. The file you select never leaves your device.",
+
+    "masthead.sub": "Draw your Google Maps Timeline on a map",
+    "lang.toggleAria": "Display language",
+
+    "drop.title": "Drop JSON here",
+    "drop.sub": "or click to choose a file",
+
+    "privacy.html": "From loading to drawing on the map, the contents of the file you select are processed <b>entirely on your own device</b>. Nothing is ever sent out or stored elsewhere.",
+
+    "howto.summary": "How to export your Timeline",
+    // 以下の iPhone / Android の英語メニュー名は未確認 (この環境から Google /
+    // 各ストアへアクセスできず、実機の英語版 UI と突き合わせられなかった)。
+    // 公開前に実際の英語 UI と照合すること。
+    "howto.iphone.html": "Google Maps app →&nbsp;your profile picture →&nbsp;Settings →&nbsp;Personal content →&nbsp;<b>Export Timeline data</b> →&nbsp;Save to Files",
+    "howto.android.html": "From the <b>device Settings</b>, not the Maps app. Settings →&nbsp;Location →&nbsp;Location services →&nbsp;Timeline →&nbsp;<b>Export Timeline data</b> →&nbsp;Continue →&nbsp;choose where to save",
+    "howto.note": "The saved file is named location-history.json. Field names may vary slightly by device and version.",
+
+    "range.h": "Time range",
+    "range.from": "Start",
+    "range.fromAria": "Start time",
+    "range.to": "End",
+    "range.toAria": "End time",
+    "range.preset7": "7 days",
+    "range.preset30": "30 days",
+    "range.preset365": "1 year",
+    "range.presetAll": "All time",
+
+    "stats.h": "Stats",
+    "stats.dist": "Distance",
+    "stats.time": "Duration",
+    "stats.tracks": "Routes",
+    "stats.points": "Points",
+
+    "legend.h": "Transport mode",
+    "legend.walk": "Walking & running",
+    "legend.bike": "Cycling",
+    "legend.car": "Driving & motorcycle",
+    "legend.transit": "Train & bus",
+    "legend.air": "Flight & ferry",
+    "legend.other": "Other / unknown",
+    "legend.gap": "Gap in recording",
+    "legend.gapDashed": "dashed",
+
+    "player.h": "Playback",
+    "player.playAria": "Play",
+    "player.pauseAria": "Pause",
+    "player.seekAria": "Playback position",
+    "player.speed": "Speed",
+    "player.speed.60": "1 min / sec",
+    "player.speed.600": "10 min / sec",
+    "player.speed.1800": "30 min / sec",
+    "player.speed.3600": "1 hour / sec",
+    "player.speed.21600": "6 hours / sec",
+    "player.speed.86400": "1 day / sec",
+    "player.speed.604800": "1 week / sec",
+    "player.skip": "Skip stops of 30+ minutes",
+    "player.follow": "Follow current position while playing",
+    "player.zoomAuto": "Auto-adjust zoom",
+    "player.hold": "Pause playback while zoom is changing",
+    "player.zoomFixed": "Keep zoom fixed",
+    "player.scaleAria": "Fixed scale",
+    "player.scale.auto": "Auto (current map scale)",
+    "player.scale.1000": "1:1,000",
+    "player.scale.5000": "1:5,000",
+    "player.scale.10000": "1:10,000",
+    "player.scale.25000": "1:25,000",
+    "player.scale.50000": "1:50,000",
+    "player.scale.100000": "1:100,000",
+    "player.scale.250000": "1:250,000",
+    "player.scale.500000": "1:500,000",
+    "player.scale.1000000": "1:1,000,000",
+    "player.scale.5000000": "1:5,000,000",
+    "player.hint": "In auto mode, the scale is set by the actual speed and extent of each stretch that shares a transport mode, together with the playback speed. In fixed mode, the map scale never changes during playback. Either way, moving the map by hand turns off tracking.",
+
+    "options.h": "Display",
+    "options.smooth": "Smooth the line between points",
+    "options.despike": "Remove measurement-error points",
+    "options.connect": "Connect gaps with a dotted line",
+
+    "edit.h": "Fix transport mode",
+    "edit.hint": "Click a route on the map to change its transport mode.",
+    "edit.exportNone": "No edits yet",
+    "edit.exportCount": "Export with {n} edits",
+    "edit.exportCountOne": "Export with {n} edit",
+
+    "share.save": "Save image",
+    "share.saving": "Saving…",
+    "share.saved": "Saved {name}.",
+    "share.failed": "Couldn't save the image: {msg}",
+    "share.blobFailed": "Couldn't create the image",
+    "share.periodLabel": "Period",
+    "share.distLabel": "Distance",
+    "share.timeLabel": "Duration",
+
+    "split.aria": "Height ratio between map and panel",
+    "footer.privacy": "Privacy Policy",
+
+    "status.loading": "Loading… ({mb} MB)",
+    "status.parsing": "Parsing… ({mb} MB)",
+    "status.building": "Building routes…",
+    "status.loaded": "{n} routes ({from} – {to})",
+    "status.tracksPoints": "{tracks} routes / {points} points",
+    "status.gapsConnected": "{n} gap(s) bridged with a dotted line",
+    "status.thinned": "Thinned from {n} points",
+    "status.despiked": "Removed {n} outlier point(s) ({pct}%)",
+    "status.unknownTypes": "{n} unrecognized transport type(s) ({sample})",
+
+    "err.badJson": "Couldn't read this file as JSON.",
+    "err.noSegments": "Couldn't find semanticSegments. Please choose the location-history.json file exported from the Google Maps app on your phone.",
+    "err.noTracks": "No routes were found in this file.",
+    "err.noTracksInRange": "There are no routes in this time range.",
+
+    "category.walk": "Walking",
+    "category.bike": "Cycling",
+    "category.car": "Driving",
+    "category.transit": "Transit",
+    "category.air": "Flight/Ferry",
+    "category.other": "Other",
+
+    "edittype.WALKING": "Walking",
+    "edittype.RUNNING": "Running",
+    "edittype.CYCLING": "Cycling",
+    "edittype.IN_PASSENGER_VEHICLE": "Car",
+    "edittype.MOTORCYCLING": "Motorcycle",
+    "edittype.IN_BUS": "Bus",
+    "edittype.IN_TRAIN": "Train",
+    "edittype.IN_SUBWAY": "Subway",
+    "edittype.IN_TRAM": "Tram",
+    "edittype.FLYING": "Flight",
+    "edittype.IN_FERRY": "Ferry",
+    "edittype.UNKNOWN_ACTIVITY_TYPE": "Unknown",
+
+    "editor.whenSep": " – ",
+  },
+};
+
+const LANG_STORAGE_KEY = "tv-lang";
+
+/** ?lang= → localStorage → navigator.language(ja→ja, else en) → ja */
+function resolveInitialLang() {
+  try {
+    const qp = new URLSearchParams(location.search).get("lang");
+    if (qp === "ja" || qp === "en") return qp;
+    const stored = localStorage.getItem(LANG_STORAGE_KEY);
+    if (stored === "ja" || stored === "en") return stored;
+    return (navigator.language || "").toLowerCase().startsWith("ja") ? "ja" : "en";
+  } catch (e) {
+    return "ja"; // localStorage / URL が使えない環境向けの最後の砦
+  }
+}
+
+let LANG = resolveInitialLang();
+let LOCALE = LANG === "en" ? "en-US" : "ja-JP";
+
+/** {name} 形式のプレースホルダを埋めて文字列を返す。キーが無ければ ja へ落として警告する。 */
+function t(key, params) {
+  const dict = I18N[LANG] || I18N.ja;
+  let str = dict[key];
+  if (str === undefined) {
+    console.warn(`[i18n] missing key "${key}" for lang "${LANG}", falling back to ja`);
+    str = I18N.ja[key];
+  }
+  if (str === undefined) {
+    console.warn(`[i18n] missing key "${key}" in ja as well`);
+    return "";
+  }
+  if (params) {
+    for (const k of Object.keys(params)) str = str.replaceAll(`{${k}}`, String(params[k]));
+  }
+  return str;
+}
+
+/**
+ * 言語を切り替え、既に描画済みの内容もすべて今の言語で再描画する。
+ * data-i18n 系の一括書き換えに加えて、状態表示・統計・凡例・書き出し
+ * ボタン・再生の時計表示のような JS が動的に文字を組み立てている箇所は、
+ * それぞれの既存の更新関数 (renderStats / renderStatus / updateExportButton /
+ * refreshClock 等) を呼び直すだけにして、ロジックを二重に持たない。
+ */
+function applyLang(lang) {
+  if (lang !== "ja" && lang !== "en") lang = "ja";
+  LANG = lang;
+  LOCALE = lang === "en" ? "en-US" : "ja-JP";
+  try { localStorage.setItem(LANG_STORAGE_KEY, lang); } catch (e) { /* 保存できない環境もある */ }
+
+  document.documentElement.lang = lang;
+  document.title = t("meta.title");
+  const setMeta = (sel, attr, value) => {
+    const el = document.querySelector(sel);
+    if (el) el.setAttribute(attr, value);
+  };
+  setMeta('meta[name="description"]', "content", t("meta.description"));
+  setMeta('meta[property="og:title"]', "content", t("meta.ogTitle"));
+  setMeta('meta[property="og:description"]', "content", t("meta.ogDescription"));
+
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    el.textContent = t(el.getAttribute("data-i18n"));
+  });
+  document.querySelectorAll("[data-i18n-html]").forEach((el) => {
+    el.innerHTML = t(el.getAttribute("data-i18n-html"));
+  });
+  document.querySelectorAll("[data-i18n-aria]").forEach((el) => {
+    el.setAttribute("aria-label", t(el.getAttribute("data-i18n-aria")));
+  });
+
+  const jaBtn = document.getElementById("lang-ja"), enBtn = document.getElementById("lang-en");
+  if (jaBtn) jaBtn.setAttribute("aria-pressed", String(lang === "ja"));
+  if (enBtn) enBtn.setAttribute("aria-pressed", String(lang === "en"));
+
+  fmtClock = buildClockFormat();
+
+  // 既に読み込み済みのファイルがあれば、統計・凡例・状態表示・書き出し
+  // ボタン・再生の時計を、リロードなしで今の言語へ差し替える。
+  updateExportButton();
+  renderStats();
+  renderStatus();
+  refreshClock();
+  setPlayIcon(anim.playing);
+}
 
 /* ============================================================
  * 設定
@@ -664,10 +1063,9 @@ const normalizeType = (type) =>
 const categoryOf = (type) => CATEGORY_OF_TYPE[type] || "other";
 const CATEGORIES = ["walk", "bike", "car", "transit", "air", "other"];
 
-const CATEGORY_LABEL = {
-  walk: "徒歩", bike: "自転車", car: "自動車", transit: "電車・バス",
-  air: "飛行機・船", other: "その他",
-};
+// カテゴリの表示名は i18n 辞書 (category.*) 側に持つ。言語を切り替えた
+// ときに読み直せるよう、ここでは値を固定せず t("category." + category) を
+// 使う場所 (clockEl の表示・共有画像) で都度引く。
 
 // 通常の経路レイヤーと再生済みレイヤーで同じ配色を使う。
 // 再生済みを単色で塗ると移動手段の色分けが消えてしまうため。
@@ -856,7 +1254,7 @@ function parseTimeline(json) {
   // ルートが配列の変種と、{ semanticSegments: [...] } の両方を受ける
   const segments = Array.isArray(json) ? json : (json && json.semanticSegments);
   if (!Array.isArray(segments)) {
-    throw new Error("semanticSegments が見つかりません。スマホの Google マップアプリから書き出した location-history.json を選んでください。");
+    throw new Error(t("err.noSegments"));
   }
 
   const paths = [];      // timelinePath を持つセグメント
@@ -1171,21 +1569,31 @@ function smoothIterations(totalPoints) {
  * ============================================================ */
 
 function fmtDistance(m) {
-  if (m >= 1000) return (m / 1000).toLocaleString("ja-JP", { maximumFractionDigits: m >= 100000 ? 0 : 1 }) + " km";
+  // 単位の "km" / "m" はそのまま両言語で通じるので、桁区切りだけ LOCALE に従う
+  if (m >= 1000) return (m / 1000).toLocaleString(LOCALE, { maximumFractionDigits: m >= 100000 ? 0 : 1 }) + " km";
   return Math.round(m) + " m";
 }
 
 function fmtDuration(ms) {
   const h = Math.floor(ms / 3600000), m = Math.round((ms % 3600000) / 60000);
+  if (LANG === "en") {
+    if (h >= 24) return Math.floor(h / 24) + "d " + (h % 24) + "h";
+    if (h) return h + "h " + m + "m";
+    return m + "m";
+  }
   if (h >= 24) return Math.floor(h / 24) + "日 " + (h % 24) + "時間";
   if (h) return h + "時間 " + m + "分";
   return m + "分";
 }
 
-const fmtClock = new Intl.DateTimeFormat("ja-JP", {
-  year: "numeric", month: "2-digit", day: "2-digit",
-  hour: "2-digit", minute: "2-digit",
-});
+/** 言語切り替えのたびに LOCALE で作り直す (applyLang から呼ぶ) */
+function buildClockFormat() {
+  return new Intl.DateTimeFormat(LOCALE, {
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit",
+  });
+}
+let fmtClock = buildClockFormat();
 
 /* ============================================================
  * 地図
@@ -1476,6 +1884,9 @@ const skipEl = $("skip"), holdEl = $("hold"), exportBtn = $("export"), shareBtn 
 const shareTextEl = $("share-text");
 const zoomAutoEl = $("zoom-auto"), zoomFixedEl = $("zoom-fixed"), scaleEl = $("scale");
 
+$("lang-ja").addEventListener("click", () => applyLang("ja"));
+$("lang-en").addEventListener("click", () => applyLang("en"));
+
 function setStatus(msg, isError) {
   statusEl.textContent = msg || "";
   statusEl.classList.toggle("error", !!isError);
@@ -1503,7 +1914,9 @@ drop.addEventListener("drop", (e) => {
 function updateExportButton() {
   const n = state.edits.size;
   exportBtn.disabled = n === 0;
-  exportBtn.textContent = n ? `${n} 件の修正を含めて書き出す` : "修正はまだありません";
+  if (!n) { exportBtn.textContent = t("edit.exportNone"); return; }
+  const key = n === 1 ? "edit.exportCountOne" : "edit.exportCount";
+  exportBtn.textContent = t(key, { n: n.toLocaleString(LOCALE) });
 }
 
 /**
@@ -1535,24 +1948,24 @@ function tick(message) {
 
 async function loadFile(file) {
   stopAnimation();
-  await tick(`読み込み中… (${(file.size / 1048576).toFixed(1)} MB)`);
+  await tick(t("status.loading", { mb: (file.size / 1048576).toFixed(1) }));
 
   let parsed;
   try {
     const text = await file.text();
-    await tick(`解析中… (${(text.length / 1048576).toFixed(1)} MB)`);
+    await tick(t("status.parsing", { mb: (text.length / 1048576).toFixed(1) }));
 
     // 使わない rawSignals を避けられれば、大きなファイルほど効く
     const slice = sliceSemanticSegments(text);
-    await tick("経路を構築中…");
+    await tick(t("status.building"));
     parsed = parseTimeline(JSON.parse(slice ?? text));
   } catch (err) {
-    setStatus(err instanceof SyntaxError ? "JSON として読めませんでした。" : err.message, true);
+    setStatus(err instanceof SyntaxError ? t("err.badJson") : err.message, true);
     return;
   }
 
   if (!parsed.tracks.length) {
-    setStatus("移動経路が 1 件も見つかりませんでした。", true);
+    setStatus(t("err.noTracks"), true);
     return;
   }
 
@@ -1582,7 +1995,9 @@ async function loadFile(file) {
   enable("stats-section", true);
   enable("player-section", true);
 
-  await tick(`${parsed.tracks.length.toLocaleString()} 件の経路 (${state.minDay} 〜 ${state.maxDay})`);
+  await tick(t("status.loaded", {
+    n: parsed.tracks.length.toLocaleString(LOCALE), from: state.minDay, to: state.maxDay,
+  }));
   await mapReady;
   render();
 }
@@ -1678,32 +2093,63 @@ function render() {
     distance += d;
     duration += Math.max(0, t.end - t.start);
   }
-  for (const c of CATEGORIES) {
-    $("d-" + c).textContent = byCategory[c] > 0 ? fmtDistance(byCategory[c]) : "–";
-  }
-  $("s-dist").textContent = view.length ? fmtDistance(distance) : "–";
-  $("s-time").textContent = view.length ? fmtDuration(duration) : "–";
-  $("s-tracks").textContent = selected.length.toLocaleString();
-  $("s-points").textContent = total.toLocaleString();
+
+  // 表示用の文字列は言語ごとに変わるので、元の数値を state に控えておき
+  // renderStats() / renderStatus() で組み立てる。言語を切り替えたときも
+  // ここへは戻らず、同じ数値から文字列だけ作り直す。
+  state.stats = { hasView: view.length > 0, distance, duration, byCategory,
+    tracksCount: selected.length, pointsCount: total };
+  renderStats();
 
   // 共有画像は今この瞬間の地図に添える値なので、描いたときの値を控えておく
   state.summary = view.length ? { fromMs, toMs, distance, duration, byCategory } : null;
   shareBtn.disabled = !state.summary;
 
-  if (!view.length) {
-    setStatus("この期間には移動経路がありません。");
-  } else {
-    const notes = [`${selected.length.toLocaleString()} 件の経路 / ${total.toLocaleString()} 点`];
-    if (gaps.features && gaps.features.length) notes.push(`途切れ ${gaps.features.length.toLocaleString()} 箇所を点線で接続`);
-    if (thinned) notes.push(`${original.toLocaleString()} 点から間引き`);
-    if (removed) notes.push(`飛び値 ${removed.toLocaleString()} 点を除去 (${(removed / rawPoints * 100).toFixed(1)}%)`);
-    if (state.unknownTypes && state.unknownTypes.length) {
-      notes.push(`判別できない移動手段 ${state.unknownTypes.length} 種 (${state.unknownTypes.slice(0, 2).join(", ")})`);
-    }
-    setStatus(notes.join(" / "));
-  }
+  state.statusInfo = view.length ? {
+    noResults: false,
+    tracksCount: selected.length, pointsCount: total,
+    gapsCount: (gaps.features && gaps.features.length) || 0,
+    thinned, original, removed, rawPoints,
+    unknownCount: (state.unknownTypes && state.unknownTypes.length) || 0,
+    unknownSample: state.unknownTypes ? state.unknownTypes.slice(0, 2).join(", ") : "",
+  } : { noResults: true };
+  renderStatus();
 
   prepareAnimation(view);
+}
+
+/** state.stats の数値から統計・凡例の距離を今の言語で書き直す */
+function renderStats() {
+  const s = state.stats;
+  if (!s) return;
+  for (const c of CATEGORIES) {
+    $("d-" + c).textContent = s.byCategory[c] > 0 ? fmtDistance(s.byCategory[c]) : "–";
+  }
+  $("s-dist").textContent = s.hasView ? fmtDistance(s.distance) : "–";
+  $("s-time").textContent = s.hasView ? fmtDuration(s.duration) : "–";
+  $("s-tracks").textContent = s.tracksCount.toLocaleString(LOCALE);
+  $("s-points").textContent = s.pointsCount.toLocaleString(LOCALE);
+}
+
+/** state.statusInfo から状態表示の文言を今の言語で組み立てる */
+function renderStatus() {
+  const info = state.statusInfo;
+  if (!info) return;
+  if (info.noResults) { setStatus(t("err.noTracksInRange")); return; }
+  const notes = [t("status.tracksPoints", {
+    tracks: info.tracksCount.toLocaleString(LOCALE), points: info.pointsCount.toLocaleString(LOCALE),
+  })];
+  if (info.gapsCount) notes.push(t("status.gapsConnected", { n: info.gapsCount.toLocaleString(LOCALE) }));
+  if (info.thinned) notes.push(t("status.thinned", { n: info.original.toLocaleString(LOCALE) }));
+  if (info.removed) {
+    notes.push(t("status.despiked", {
+      n: info.removed.toLocaleString(LOCALE), pct: (info.removed / info.rawPoints * 100).toFixed(1),
+    }));
+  }
+  if (info.unknownCount) {
+    notes.push(t("status.unknownTypes", { n: info.unknownCount, sample: info.unknownSample }));
+  }
+  setStatus(notes.join(" / "));
 }
 
 /* ============================================================
@@ -2108,9 +2554,16 @@ function draw(force) {
   const leg = followEl.checked ? state.legs[anim.leg] : null;
   const speed = leg && leg.move > 0 ? ` ${Math.round(leg.dist / leg.move * 3.6)}km/h` : "";
   const zoom = followEl.checked ? ` · z${anim.zoom.toFixed(1)}` : "";
-  clockEl.textContent = `${fmtClock.format(new Date(anim.t))} · ${CATEGORY_LABEL[category]}${speed}${zoom}`;
+  clockEl.textContent = `${fmtClock.format(new Date(anim.t))} · ${t("category." + category)}${speed}${zoom}`;
   seekEl.value = Math.round(((anim.t - anim.t0) / (anim.t1 - anim.t0)) * 1000);
   paintSeek();
+}
+
+/** 言語を切り替えたときに、今の再生位置のまま時計表示だけ作り直す */
+function refreshClock() {
+  if (state.flat.length < 2) { clockEl.textContent = ""; return; }
+  if (anim.playing || anim.index > 0) { draw(true); return; }
+  clockEl.textContent = fmtClock.format(new Date(anim.t0));
 }
 
 /** つまみより左を再生済みの色で塗る。塗り方はブラウザ間で揃わないので自前で持つ。 */
@@ -2252,7 +2705,7 @@ function startAnimation() {
 /** 再生ボタンの見た目は CSS の擬似要素が描くので、状態だけ渡す */
 function setPlayIcon(playing) {
   playBtn.classList.toggle("playing", playing);
-  playBtn.setAttribute("aria-label", playing ? "一時停止" : "再生");
+  playBtn.setAttribute("aria-label", playing ? t("player.pauseAria") : t("player.playAria"));
 }
 
 function pauseAnimation() {
@@ -2302,20 +2755,13 @@ seekEl.addEventListener("input", () => {
  * 読み直せる。
  * ------------------------------------------------------------ */
 
-// 書き戻す値は Google が使う型名。表示だけ日本語にする。
+// 書き戻す値は Google が使う型名。表示ラベルは i18n 辞書 (edittype.*) から
+// 都度引く (openEditor はクリックのたびに呼ばれるので、言語切り替え後の
+// クリックでも常に今の言語で出る)。
 const EDITABLE_TYPES = [
-  ["WALKING", "徒歩"],
-  ["RUNNING", "ランニング"],
-  ["CYCLING", "自転車"],
-  ["IN_PASSENGER_VEHICLE", "自動車"],
-  ["MOTORCYCLING", "バイク"],
-  ["IN_BUS", "バス"],
-  ["IN_TRAIN", "電車"],
-  ["IN_SUBWAY", "地下鉄"],
-  ["IN_TRAM", "路面電車"],
-  ["FLYING", "飛行機"],
-  ["IN_FERRY", "船"],
-  ["UNKNOWN_ACTIVITY_TYPE", "不明"],
+  "WALKING", "RUNNING", "CYCLING", "IN_PASSENGER_VEHICLE", "MOTORCYCLING",
+  "IN_BUS", "IN_TRAIN", "IN_SUBWAY", "IN_TRAM", "FLYING", "IN_FERRY",
+  "UNKNOWN_ACTIVITY_TYPE",
 ];
 
 function setTrackType(track, type) {
@@ -2348,14 +2794,14 @@ function openEditor(track, lngLat) {
 
   const when = document.createElement("div");
   when.className = "editor-when";
-  when.textContent = `${fmtClock.format(new Date(track.start))} 〜 ${fmtClock.format(new Date(track.end))}`;
+  when.textContent = fmtClock.format(new Date(track.start)) + t("editor.whenSep") + fmtClock.format(new Date(track.end));
 
   const select = document.createElement("select");
   let matched = false;
-  for (const [value, text] of EDITABLE_TYPES) {
+  for (const value of EDITABLE_TYPES) {
     const option = document.createElement("option");
     option.value = value;
-    option.textContent = text;
+    option.textContent = t("edittype." + value);
     if (value === track.type) { option.selected = true; matched = true; }
     select.appendChild(option);
   }
@@ -2422,6 +2868,12 @@ function syncFollowUI() {
   scaleEl.disabled = !zoomFixedEl.checked;
 }
 syncFollowUI();
+
+// ここまでで i18n が参照する要素・関数がすべて揃ったので、起動時の言語を
+// 反映する。ファイル未読み込みなので renderStats/renderStatus/refreshClock は
+// 何もせず抜けるだけ (state.stats などが無いため) — data-i18n 系の書き換えと
+// タイトル・meta・トグルの状態だけが実際に効く。
+applyLang(LANG);
 
 followEl.addEventListener("change", () => {
   syncFollowUI();
@@ -2582,7 +3034,7 @@ function composeShareImage(shot) {
   const chips = CATEGORIES
     .filter((m) => m !== "other" && sum.byCategory[m] > 0)
     .map((m) => {
-      const text = `${CATEGORY_LABEL[m]} ${fmtDistance(sum.byCategory[m])}`;
+      const text = `${t("category." + m)} ${fmtDistance(sum.byCategory[m])}`;
       return { m, text, w: DOT + DOT_GAP + measure.measureText(text).width };
     });
 
@@ -2633,21 +3085,22 @@ function composeShareImage(shot) {
   g.textBaseline = "top";
 
   // 期間
+  const periodLabel = t("share.periodLabel");
   g.fillStyle = c("ink-3");
   g.font = font(10.5);
-  g.fillText("期間", PAD, top + yRange + u(3));
+  g.fillText(periodLabel, PAD, top + yRange + u(3));
   measure.font = font(10.5);
   g.fillStyle = c("ink");
   g.font = font(14.5);
   g.fillText(
     `${fmtClock.format(new Date(sum.fromMs))} → ${fmtClock.format(new Date(sum.toMs))}`,
-    PAD + measure.measureText("期間").width + u(9), top + yRange
+    PAD + measure.measureText(periodLabel).width + u(9), top + yRange
   );
 
   // 統計
   [
-    { k: "移動距離", v: fmtDistance(sum.distance) },
-    { k: "移動時間", v: fmtDuration(sum.duration) },
+    { k: t("share.distLabel"), v: fmtDistance(sum.distance) },
+    { k: t("share.timeLabel"), v: fmtDuration(sum.duration) },
   ].forEach((stat, i) => {
     const x = i === 0 ? PAD : Math.round(W / 2);
     g.fillStyle = c("ink-3");
@@ -2701,12 +3154,12 @@ async function shareMapImage() {
   shareBtn.classList.add("busy");
   shareBtn.disabled = true;
   // 大きな地図だと PNG を書き出すまで一呼吸ある。押さったことを見せる。
-  shareTextEl.textContent = "保存中…";
+  shareTextEl.textContent = t("share.saving");
   try {
     const sum = state.summary;
     const canvas = composeShareImage(await captureMap());
     const blob = await new Promise((resolve, reject) => {
-      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("画像を作れませんでした"))), "image/png");
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(t("share.blobFailed")))), "image/png");
     });
     const name = shareFileName(sum);
     const file = new File([blob], name, { type: "image/png" });
@@ -2722,12 +3175,12 @@ async function shareMapImage() {
       }
     }
     saveBlob(blob, name);
-    setStatus(`${name} を保存しました。`);
+    setStatus(t("share.saved", { name }));
   } catch (err) {
-    setStatus("画像を保存できませんでした: " + (err && err.message ? err.message : err), true);
+    setStatus(t("share.failed", { msg: err && err.message ? err.message : err }), true);
   } finally {
     shareBtn.classList.remove("busy");
-    shareTextEl.textContent = "画像を保存";
+    shareTextEl.textContent = t("share.save");
     shareBtn.disabled = !state.summary;
   }
 }
