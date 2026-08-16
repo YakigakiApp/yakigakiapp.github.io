@@ -404,11 +404,18 @@ nav a:hover {
     font-size: 0.95rem;
 }
 
+.tool-relation {
+    text-align: center;
+    font-size: 0.95rem;
+    color: var(--text);
+    margin-top: 2rem;
+}
+
 .tools-note {
     text-align: center;
     font-size: 0.85rem;
     color: var(--text-muted);
-    margin-top: 1.5rem;
+    margin-top: 0.75rem;
 }
 
 /* SNS */
