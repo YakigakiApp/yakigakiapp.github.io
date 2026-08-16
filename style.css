@@ -343,6 +343,74 @@ nav a:hover {
     color: var(--primary);
 }
 
+/* Tools */
+.tools {
+    padding: 100px 0;
+}
+
+.tools .section-title {
+    margin-bottom: 1rem;
+}
+
+.tools-lead {
+    text-align: center;
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    max-width: 600px;
+    margin: 0 auto 3rem;
+}
+
+.tool-card {
+    display: block;
+    max-width: 680px;
+    margin: 0 auto;
+    background: var(--surface);
+    padding: 2.5rem;
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    transition: var(--transition);
+    text-decoration: none;
+    color: inherit;
+    text-align: center;
+}
+
+.tool-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+    border-color: var(--primary);
+}
+
+.tool-card .icon {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.tool-card h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.tool-card p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+}
+
+.tool-cta {
+    display: inline-block;
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.tools-note {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 1.5rem;
+}
+
 /* SNS */
 .sns {
     padding: 100px 0;
@@ -451,13 +519,13 @@ header.scrolled {
 }
 
 /* Scroll Reveal */
-.feature-card, .section-title, .hero-text, .hero-image, .plus-card {
+.feature-card, .section-title, .hero-text, .hero-image, .plus-card, .tool-card {
     opacity: 0;
     transform: translateY(30px);
     transition: opacity 0.8s ease-out, transform 0.8s ease-out;
 }
 
-.feature-card.revealed, .section-title.revealed, .hero-text.revealed, .hero-image.revealed, .plus-card.revealed {
+.feature-card.revealed, .section-title.revealed, .hero-text.revealed, .hero-image.revealed, .plus-card.revealed, .tool-card.revealed {
     opacity: 1;
     transform: translateY(0);
 }

@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, observerOptions);
 
     // Start observing elements
-    const revealElements = document.querySelectorAll('.feature-card, .section-title, .hero-text, .hero-image, .plus-card');
+    const revealElements = document.querySelectorAll('.feature-card, .section-title, .hero-text, .hero-image, .plus-card, .tool-card');
     revealElements.forEach(el => observer.observe(el));
 
     // Render SNS posts lazily when the #sns section scrolls into view
