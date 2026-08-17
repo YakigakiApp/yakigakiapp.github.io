@@ -3076,9 +3076,9 @@ function composeShareImage(shot) {
     }
   }
 
-  // 出典が長ければ、ツール名と同じ行に載せず下へ回す
+  // 出典が長ければ、URL と同じ行に載せず下へ回す
   measure.font = font(10);
-  const brand = "Timeline Visualizer";
+  const brand = "path-biz.com/timeline-visualizer";
   const attrib = attributionText();
   const footWrap =
     measure.measureText(brand).width + measure.measureText(attrib).width + u(20) > W - PAD * 2;
