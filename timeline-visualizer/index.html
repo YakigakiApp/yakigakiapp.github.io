@@ -55,11 +55,17 @@
     grid-template-columns: 372px 1fr;
     grid-template-rows: auto 1fr;   /* 1 行目は Passage のバナー */
     font: 13px/1.55 -apple-system, BlinkMacSystemFont, "Helvetica Neue",
-          "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Arial, sans-serif;
+          "Hiragino Sans", "Noto Sans JP", "Yu Gothic",
+          "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", Arial, sans-serif;
     color: var(--ink);
     background: var(--bg);
     -webkit-font-smoothing: antialiased;
   }
+  /* 韓国語は語節 (空白で区切られたまとまり) の途中で折り返すと読みにくい。
+     ハングルは既定だと文字単位でどこでも折れてしまうので、空白で折らせる。
+     長すぎて入りきらないものだけは、はみ出させずに途中で折る。 */
+  html[lang="ko"] body { word-break: keep-all; overflow-wrap: break-word; }
+
   #sidebar {
     background: var(--bg);
     border-right: 1px solid var(--line);
@@ -396,7 +402,8 @@
   .maplibregl-popup-content {
     border-radius: var(--r); border: 1px solid var(--line);
     padding: 12px 13px; box-shadow: 0 6px 20px rgba(23, 25, 29, .13);
-    font: 13px/1.55 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    font: 13px/1.55 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP",
+          "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
     color: var(--ink);
   }
   .maplibregl-ctrl-group { border-radius: 6px !important; box-shadow: 0 1px 4px rgba(23,25,29,.16) !important; }
@@ -411,7 +418,8 @@
     background: var(--field); color: var(--ink);
     /* ボタンは font を継がない */
     font: 500 12px/1 -apple-system, BlinkMacSystemFont, "Helvetica Neue",
-          "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Arial, sans-serif;
+          "Hiragino Sans", "Noto Sans JP", "Yu Gothic",
+          "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", Arial, sans-serif;
     white-space: nowrap;
     box-shadow: 0 1px 4px rgba(23, 25, 29, .16);
     cursor: pointer;
@@ -490,6 +498,7 @@
     <div class="lang-toggle" role="group" data-i18n-aria="lang.toggleAria" aria-label="表示言語">
       <button type="button" id="lang-ja" aria-pressed="true">JA</button>
       <button type="button" id="lang-en" aria-pressed="false">EN</button>
+      <button type="button" id="lang-ko" aria-pressed="false">KO</button>
     </div>
   </header>
 
@@ -654,7 +663,7 @@
  * 多言語化 (i18n)
  *
  * 辞書 + キー方式。LP のような span 二重化はできない — 統計や状態表示など
- * 多くの文字列が JS 側で組み立てられるため。ja/en は同じキー集合を持つ。
+ * 多くの文字列が JS 側で組み立てられるため。ja/en/ko は同じキー集合を持つ。
  * data-i18n / data-i18n-html / data-i18n-aria を付けた要素は applyLang() が
  * 一括で書き換える。マークアップ上の初期値は常に ja (JS 実行前でも白紙にしない)。
  * ============================================================ */
@@ -940,6 +949,148 @@ const I18N = {
 
     "editor.whenSep": " – ",
   },
+
+  ko: {
+    "meta.title": "Timeline Visualizer — Google 지도 타임라인을 지도에 그리기",
+    "meta.description": "Google 지도에서 내보낸 타임라인 JSON을, 이동 수단별로 색을 나눈 지도와 재생 애니메이션으로 돌아보는 도구. 선택한 파일의 내용은 기기 안에서만 처리되며 외부로 전송되지 않습니다.",
+    "meta.ogTitle": "Timeline Visualizer",
+    "meta.ogDescription": "Google 지도 타임라인을, 이동 수단별로 색을 나눈 지도로 돌아보세요. 선택한 파일은 기기 밖으로 나가지 않습니다.",
+
+    "promo.alt": "Passage: Mapping Your Moments — 여행의 궤적을 지도에 남겨보세요",
+
+    "masthead.sub": "Google 지도 타임라인을 지도에 그립니다",
+    "lang.toggleAria": "표시 언어",
+
+    "drop.title": "JSON 파일을 여기에 놓기",
+    "drop.sub": "또는 클릭해서 파일 선택",
+
+    "privacy.html": "선택한 파일의 내용은 불러오기부터 지도에 그리기까지 <b>모두 사용 중인 기기 안에서만</b> 처리됩니다. 외부로 전송되거나 저장되는 일은 없습니다.",
+
+    "howto.summary": "타임라인 내보내는 방법",
+    // 下の iPhone / Android の韓国語メニュー名は、英語版と同じく未確認
+    // (この環境から Google へアクセスできず、実機の韓国語 UI と突き合わせ
+    // られなかった)。公開前に実際の韓国語 UI と照合すること。
+    "howto.iphone.html": "Google 지도 앱 →&nbsp;프로필 사진 →&nbsp;설정 →&nbsp;개인 콘텐츠 →&nbsp;<b>타임라인 데이터 내보내기</b> →&nbsp;파일에 저장",
+    "howto.android.html": "지도 앱이 아니라 <b>기기 설정</b>에서. 설정 →&nbsp;위치 →&nbsp;위치 서비스 →&nbsp;타임라인 →&nbsp;<b>타임라인 데이터 내보내기</b> →&nbsp;계속 →&nbsp;저장 위치 선택",
+    "howto.note": "저장되는 파일은 location-history.json입니다. 항목 이름은 기기나 시기에 따라 조금씩 다를 수 있습니다.",
+
+    "range.h": "기간",
+    "range.from": "시작",
+    "range.fromAria": "시작 시각",
+    "range.to": "종료",
+    "range.toAria": "종료 시각",
+    "range.preset7": "7일",
+    "range.preset30": "30일",
+    "range.preset365": "1년",
+    "range.presetAll": "전체",
+
+    "stats.h": "통계",
+    "stats.dist": "이동 거리",
+    "stats.time": "이동 시간",
+    "stats.tracks": "경로",
+    "stats.points": "지점 수",
+
+    "legend.h": "이동 수단",
+    "legend.walk": "걷기·달리기",
+    "legend.bike": "자전거",
+    "legend.car": "자동차·오토바이",
+    "legend.transit": "기차·버스",
+    "legend.air": "비행기·배",
+    "legend.other": "기타·알 수 없음",
+    "legend.gap": "기록이 끊긴 구간",
+    "legend.gapDashed": "점선",
+
+    "player.h": "재생",
+    "player.playAria": "재생",
+    "player.pauseAria": "일시정지",
+    "player.seekAria": "재생 위치",
+    "player.speed": "속도",
+    "player.speed.60": "1분 / 초",
+    "player.speed.600": "10분 / 초",
+    "player.speed.1800": "30분 / 초",
+    "player.speed.3600": "1시간 / 초",
+    "player.speed.21600": "6시간 / 초",
+    "player.speed.86400": "1일 / 초",
+    "player.speed.604800": "1주일 / 초",
+    "player.skip": "30분 이상 멈춘 구간 건너뛰기",
+    "player.follow": "재생 중 현재 위치 따라가기",
+    "player.zoomAuto": "축척 자동 변경",
+    "player.hold": "축척이 바뀌는 동안 재생 멈추기",
+    "player.zoomFixed": "축척 고정",
+    "player.scaleAria": "고정할 축척",
+    "player.scale.auto": "자동(현재 지도 축척)",
+    "player.scale.1000": "1:1,000",
+    "player.scale.5000": "1:5,000",
+    "player.scale.10000": "1:10,000",
+    "player.scale.25000": "1:25,000",
+    "player.scale.50000": "1:50,000",
+    "player.scale.100000": "1:100,000",
+    "player.scale.250000": "1:250,000",
+    "player.scale.500000": "1:500,000",
+    "player.scale.1000000": "1:1,000,000",
+    "player.scale.5000000": "1:5,000,000",
+    "player.hint": "자동 변경에서는 같은 이동 수단이 이어지는 구간의 실제 속도와 범위, 그리고 재생 배속에 따라 축척이 정해집니다. 고정에서는 재생하는 동안 지도 축척이 바뀌지 않습니다. 어느 쪽이든 지도를 직접 움직이면 따라가기가 해제됩니다.",
+
+    "options.h": "표시",
+    "options.smooth": "지점 사이를 부드럽게 잇기",
+    "options.despike": "측정 오차 지점 제거",
+    "options.connect": "끊긴 구간을 점선으로 잇기",
+
+    "edit.h": "이동 수단 수정",
+    "edit.hint": "지도 위의 경로를 클릭하면 이동 수단을 바꿀 수 있습니다.",
+    "edit.exportNone": "아직 수정한 내용이 없습니다",
+    "edit.exportCount": "수정 {n}건을 포함해 내보내기",
+    "edit.exportCountOne": "수정 {n}건을 포함해 내보내기",
+
+    "share.save": "이미지 저장",
+    "share.saving": "저장 중…",
+    "share.saved": "{name}을(를) 저장했습니다.",
+    "share.failed": "이미지를 저장하지 못했습니다: {msg}",
+    "share.blobFailed": "이미지를 만들지 못했습니다",
+    "share.periodLabel": "기간",
+    "share.distLabel": "이동 거리",
+    "share.timeLabel": "이동 시간",
+
+    "split.aria": "지도와 조작 패널의 높이 비율",
+    "footer.privacy": "개인정보처리방침",
+
+    "status.loading": "불러오는 중… ({mb} MB)",
+    "status.parsing": "분석 중… ({mb} MB)",
+    "status.building": "경로를 만드는 중…",
+    "status.loaded": "경로 {n}건 ({from} ~ {to})",
+    "status.tracksPoints": "경로 {tracks}건 / {points}점",
+    "status.gapsConnected": "끊긴 {n}곳을 점선으로 연결",
+    "status.thinned": "{n}점에서 솎아냄",
+    "status.despiked": "튀는 값 {n}점 제거 ({pct}%)",
+    "status.unknownTypes": "알 수 없는 이동 수단 {n}종 ({sample})",
+
+    "err.badJson": "JSON으로 읽을 수 없습니다.",
+    "err.noSegments": "semanticSegments를 찾을 수 없습니다. 스마트폰의 Google 지도 앱에서 내보낸 location-history.json을 선택해 주세요.",
+    "err.noTracks": "이동 경로를 하나도 찾지 못했습니다.",
+    "err.noTracksInRange": "이 기간에는 이동 경로가 없습니다.",
+
+    "category.walk": "걷기",
+    "category.bike": "자전거",
+    "category.car": "자동차",
+    "category.transit": "대중교통",
+    "category.air": "비행기·배",
+    "category.other": "기타",
+
+    "edittype.WALKING": "걷기",
+    "edittype.RUNNING": "달리기",
+    "edittype.CYCLING": "자전거",
+    "edittype.IN_PASSENGER_VEHICLE": "자동차",
+    "edittype.MOTORCYCLING": "오토바이",
+    "edittype.IN_BUS": "버스",
+    "edittype.IN_TRAIN": "기차",
+    "edittype.IN_SUBWAY": "지하철",
+    "edittype.IN_TRAM": "노면전차",
+    "edittype.FLYING": "비행기",
+    "edittype.IN_FERRY": "배",
+    "edittype.UNKNOWN_ACTIVITY_TYPE": "알 수 없음",
+
+    "editor.whenSep": " ~ ",
+  },
 };
 
 /* Passage のバナー画像 (640x100 JPEG) のファイル名。
@@ -949,25 +1100,56 @@ const I18N = {
 const PROMO_SRC = {
   ja: "promo-ja.jpg",
   en: "promo-en.jpg",
+  // 韓国語版の絵はまだ無いので英語版を出す。用意できたら promo-ko.jpg に差し替える。
+  ko: "promo-en.jpg",
 };
 
 const LANG_STORAGE_KEY = "tv-lang";
 
-/** ?lang= → localStorage → navigator.language(ja→ja, else en) → ja */
+/* 対応言語。I18N に辞書を足してここに 1 行加えれば、?lang= の受け付け、
+   端末の言語からの自動判定、切替ボタンの選択状態はすべて追従する
+   (ボタン自体は id="lang-<code>" でマークアップ側に置く)。 */
+const LANGS = ["ja", "en", "ko"];
+const LOCALES = { ja: "ja-JP", en: "en-US", ko: "ko-KR" };
+/** どれとも判定できなかったときの言語 (日本語圏向けに作った道具なので ja) */
+const FALLBACK_LANG = "ja";
+
+/**
+ * 端末の言語設定から表示言語を選ぶ。
+ *
+ * navigator.language ひとつではなく navigator.languages を先頭から見る。
+ * 第 1 希望が未対応でも第 2 希望以降に ko や ja を置いている端末 (例:
+ * ["zh-TW", "ko-KR"]) を拾えるようにするため。対応言語がひとつも無ければ、
+ * 世界のどこから来ても最低限読める英語にする。
+ */
+function detectLangFromDevice() {
+  const prefs = (navigator.languages && navigator.languages.length)
+    ? navigator.languages
+    : [navigator.language || ""];
+  for (const pref of prefs) {
+    // "ko-KR" や "ja-JP-u-ca-japanese" のような形で来るので、地域や
+    // 拡張を落とした先頭の言語コードだけで判定する。
+    const base = String(pref).toLowerCase().split("-")[0];
+    if (LANGS.includes(base)) return base;
+  }
+  return "en";
+}
+
+/** ?lang= → localStorage (前回の手動選択) → 端末の言語 → ja */
 function resolveInitialLang() {
   try {
     const qp = new URLSearchParams(location.search).get("lang");
-    if (qp === "ja" || qp === "en") return qp;
+    if (LANGS.includes(qp)) return qp;
     const stored = localStorage.getItem(LANG_STORAGE_KEY);
-    if (stored === "ja" || stored === "en") return stored;
-    return (navigator.language || "").toLowerCase().startsWith("ja") ? "ja" : "en";
+    if (LANGS.includes(stored)) return stored;
+    return detectLangFromDevice();
   } catch (e) {
-    return "ja"; // localStorage / URL が使えない環境向けの最後の砦
+    return FALLBACK_LANG; // localStorage / URL が使えない環境向けの最後の砦
   }
 }
 
 let LANG = resolveInitialLang();
-let LOCALE = LANG === "en" ? "en-US" : "ja-JP";
+let LOCALE = LOCALES[LANG];
 
 /** {name} 形式のプレースホルダを埋めて文字列を返す。キーが無ければ ja へ落として警告する。 */
 function t(key, params) {
@@ -995,9 +1177,9 @@ function t(key, params) {
  * refreshClock 等) を呼び直すだけにして、ロジックを二重に持たない。
  */
 function applyLang(lang) {
-  if (lang !== "ja" && lang !== "en") lang = "ja";
+  if (!LANGS.includes(lang)) lang = FALLBACK_LANG;
   LANG = lang;
-  LOCALE = lang === "en" ? "en-US" : "ja-JP";
+  LOCALE = LOCALES[lang];
   try { localStorage.setItem(LANG_STORAGE_KEY, lang); } catch (e) { /* 保存できない環境もある */ }
 
   document.documentElement.lang = lang;
@@ -1028,9 +1210,10 @@ function applyLang(lang) {
     promoImg.alt = t("promo.alt");
   }
 
-  const jaBtn = document.getElementById("lang-ja"), enBtn = document.getElementById("lang-en");
-  if (jaBtn) jaBtn.setAttribute("aria-pressed", String(lang === "ja"));
-  if (enBtn) enBtn.setAttribute("aria-pressed", String(lang === "en"));
+  for (const code of LANGS) {
+    const btn = document.getElementById("lang-" + code);
+    if (btn) btn.setAttribute("aria-pressed", String(code === lang));
+  }
 
   fmtClock = buildClockFormat();
 
@@ -1604,6 +1787,11 @@ function fmtDuration(ms) {
     if (h) return h + "h " + m + "m";
     return m + "m";
   }
+  if (LANG === "ko") {
+    if (h >= 24) return Math.floor(h / 24) + "일 " + (h % 24) + "시간";
+    if (h) return h + "시간 " + m + "분";
+    return m + "분";
+  }
   if (h >= 24) return Math.floor(h / 24) + "日 " + (h % 24) + "時間";
   if (h) return h + "時間 " + m + "分";
   return m + "分";
@@ -1907,8 +2095,10 @@ const skipEl = $("skip"), holdEl = $("hold"), exportBtn = $("export"), shareBtn 
 const shareTextEl = $("share-text");
 const zoomAutoEl = $("zoom-auto"), zoomFixedEl = $("zoom-fixed"), scaleEl = $("scale");
 
-$("lang-ja").addEventListener("click", () => applyLang("ja"));
-$("lang-en").addEventListener("click", () => applyLang("en"));
+for (const code of LANGS) {
+  const btn = document.getElementById("lang-" + code);
+  if (btn) btn.addEventListener("click", () => applyLang(code));
+}
 
 function setStatus(msg, isError) {
   statusEl.textContent = msg || "";
@@ -3041,7 +3231,8 @@ function composeShareImage(shot) {
   // 狭い画面では文字と余白を少しだけ詰める
   const dense = cssW < 420 ? 0.88 : 1;
   const u = (v) => v * k * dense;
-  const face = '-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Arial, sans-serif';
+  const face = '-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", ' +
+               '"Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", Arial, sans-serif';
   const font = (size, weight) => `${weight || 400} ${u(size)}px ${face}`;
 
   const css = getComputedStyle(document.documentElement);
