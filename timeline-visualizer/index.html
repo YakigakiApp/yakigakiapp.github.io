@@ -57,6 +57,26 @@
 
     --r:  7px;
     --pad: 20px;
+
+    /* 書体。共有画像 (canvas) もこの値を読むので、ここが唯一の持ち場。 */
+    --font: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+            "Hiragino Sans", "Noto Sans JP", "Yu Gothic",
+            "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", Arial, sans-serif;
+  }
+
+  /* 漢字は日本語と中国語で字形が違う ((骨)(直)(steps) など)。日本語向けの書体が
+     先に来ていると中国語の文章が日本語の字形で出るので、簡体・繁体それぞれの
+     書体を先に置く。ハングルは日本語の書体に無く、字形の取り違えも起きないため
+     既定の並びのままで足りる。 */
+  html[lang="zh-Hans"] {
+    --font: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+            "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC",
+            Arial, sans-serif;
+  }
+  html[lang="zh-Hant"] {
+    --font: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+            "PingFang TC", "Microsoft JhengHei", "Noto Sans TC",
+            Arial, sans-serif;
   }
 
   * { box-sizing: border-box; }
@@ -65,9 +85,7 @@
     display: grid;
     grid-template-columns: 372px 1fr;
     grid-template-rows: auto 1fr;   /* 1 行目は Passage のバナー */
-    font: 13px/1.55 -apple-system, BlinkMacSystemFont, "Helvetica Neue",
-          "Hiragino Sans", "Noto Sans JP", "Yu Gothic",
-          "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", Arial, sans-serif;
+    font: 13px/1.55 var(--font);
     color: var(--ink);
     background: var(--bg);
     -webkit-font-smoothing: antialiased;
@@ -133,24 +151,27 @@
   .sub { color: var(--ink-2); font-size: 11px; margin: 1px 0 0; }
 
   /* ---- 言語切替 ----
+     言語が 5 つになり、横に並べるボタンでは見出しに収まらないので一覧にした。
+     地球儀を添えて、文字を読まなくても何の一覧か分かるようにしてある。
      ツールの配色は無彩色に徹しているので (下の :root のコメント参照)、
-     ランディングページの青い .lang-switch は使わず、統計・凡例と同じ
-     ink 系の色だけで表す。選ばれていない方は --ink-3 で沈める。 */
-  .lang-toggle {
+     ランディングページの青い .lang-switch は使わず ink 系の色だけで表す。 */
+  .lang-picker {
     margin-left: auto; flex: none;
-    display: flex; gap: 2px;
+    display: flex; align-items: center; gap: 4px;
+    color: var(--ink-3);
+    transition: color .12s;
   }
-  .lang-toggle button {
-    padding: 4px 7px; font: inherit; font-size: 10px; font-weight: 600;
-    letter-spacing: .04em; text-transform: uppercase;
-    border: 1px solid transparent; border-radius: var(--r);
-    background: transparent; color: var(--ink-3); cursor: pointer;
-    transition: color .12s, background .12s;
+  .lang-picker:hover, .lang-picker:focus-within { color: var(--ink); }
+  .lang-picker svg { flex: none; display: block; }
+  /* 期間や速度の select と同じ部品だが、見出しの中では枠を消して軽くする */
+  .lang-picker select {
+    width: auto; padding: 4px 22px 4px 6px;
+    font-size: 11px; line-height: 1.3;
+    border-color: transparent; background-color: transparent;
+    background-position: right 5px center;
+    color: inherit;
   }
-  .lang-toggle button:hover { color: var(--ink); }
-  .lang-toggle button[aria-pressed="true"] {
-    color: var(--ink); background: var(--sunken);
-  }
+  .lang-picker select:hover { border-color: transparent; background-color: var(--sunken); }
 
   section { border-top: 1px solid var(--line); padding: 18px var(--pad); }
   section:first-of-type { border-top: none; }
@@ -413,8 +434,7 @@
   .maplibregl-popup-content {
     border-radius: var(--r); border: 1px solid var(--line);
     padding: 12px 13px; box-shadow: 0 6px 20px rgba(23, 25, 29, .13);
-    font: 13px/1.55 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP",
-          "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    font: 13px/1.55 var(--font);
     color: var(--ink);
   }
   .maplibregl-ctrl-group { border-radius: 6px !important; box-shadow: 0 1px 4px rgba(23,25,29,.16) !important; }
@@ -428,9 +448,7 @@
     border: 0; border-radius: 6px;
     background: var(--field); color: var(--ink);
     /* ボタンは font を継がない */
-    font: 500 12px/1 -apple-system, BlinkMacSystemFont, "Helvetica Neue",
-          "Hiragino Sans", "Noto Sans JP", "Yu Gothic",
-          "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", Arial, sans-serif;
+    font: 500 12px/1 var(--font);
     white-space: nowrap;
     box-shadow: 0 1px 4px rgba(23, 25, 29, .16);
     cursor: pointer;
@@ -506,10 +524,22 @@
       <h1>Timeline Visualizer</h1>
       <p class="sub" data-i18n="masthead.sub">Google マップのタイムラインを地図で描く</p>
     </div>
-    <div class="lang-toggle" role="group" data-i18n-aria="lang.toggleAria" aria-label="表示言語">
-      <button type="button" id="lang-ja" aria-pressed="true">JA</button>
-      <button type="button" id="lang-en" aria-pressed="false">EN</button>
-      <button type="button" id="lang-ko" aria-pressed="false">KO</button>
+    <div class="lang-picker">
+      <!-- 地球儀。経線を 1 本入れただけの形で、15px でも潰れない -->
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.7" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M3 12h18" />
+        <path d="M12 3c2.5 2.4 3.9 5.6 3.9 9S14.5 18.6 12 21c-2.5-2.4-3.9-5.6-3.9-9S9.5 5.4 12 3z" />
+      </svg>
+      <!-- 言語名はその言語自身で書く。翻訳しないので data-i18n は付けない -->
+      <select id="lang" data-i18n-aria="lang.toggleAria" aria-label="表示言語">
+        <option value="ja">日本語</option>
+        <option value="en">English</option>
+        <option value="ko">한국어</option>
+        <option value="zh-Hans">简体中文</option>
+        <option value="zh-Hant">繁體中文</option>
+      </select>
     </div>
   </header>
 
@@ -675,7 +705,7 @@
  * 多言語化 (i18n)
  *
  * 辞書 + キー方式。LP のような span 二重化はできない — 統計や状態表示など
- * 多くの文字列が JS 側で組み立てられるため。ja/en/ko は同じキー集合を持つ。
+ * 多くの文字列が JS 側で組み立てられるため。どの言語も同じキー集合を持つ。
  * data-i18n / data-i18n-html / data-i18n-aria を付けた要素は applyLang() が
  * 一括で書き換える。マークアップ上の初期値は常に ja (JS 実行前でも白紙にしない)。
  * ============================================================ */
@@ -1106,6 +1136,290 @@ const I18N = {
 
     "editor.whenSep": " ~ ",
   },
+
+  // 簡体字。Google 地図のメニュー名は実機と突き合わせていない (この環境から
+  // Google へアクセスできないため)。項目そのものは日英で実機確認した
+  // 「位置情報とプライバシー / Location & Privacy」に合わせてある。
+  "zh-Hans": {
+    "meta.title": "Timeline Visualizer — 在地图上绘制你的 Google 地图时间轴",
+    "meta.description": "把从 Google 地图导出的时间轴 JSON，用按交通方式分色的地图和播放动画回顾。所选文件的内容只在你的设备上处理，不会发送到外部。",
+    "meta.ogTitle": "Timeline Visualizer",
+    "meta.ogDescription": "把 Google 地图时间轴，变成按交通方式分色的地图来回顾。所选文件不会离开你的设备。",
+
+    "promo.alt": "Passage: Mapping Your Moments — 把旅途的轨迹留在地图上",
+
+    "masthead.sub": "在地图上绘制你的 Google 地图时间轴",
+    "lang.toggleAria": "显示语言",
+
+    "drop.title": "把 JSON 拖到这里",
+    "drop.sub": "或点击选择文件",
+
+    "privacy.html": "从读取到绘制在地图上，所选文件的内容<b>全部只在你的设备上</b>处理。不会发送到外部，也不会被保存。",
+
+    "howto.summary": "如何导出时间轴",
+    "howto.iphone.html": "Google 地图应用 →&nbsp;头像 →&nbsp;设置 →&nbsp;位置信息与隐私 →&nbsp;<b>导出时间轴数据</b> →&nbsp;存储到文件",
+    "howto.android.html": "不是在地图应用里，而是在<b>设备设置</b>中。设置 →&nbsp;位置信息 →&nbsp;位置服务 →&nbsp;时间轴 →&nbsp;<b>导出时间轴数据</b> →&nbsp;继续 →&nbsp;选择保存位置",
+    "howto.note": "保存下来的文件名为 location-history.json。项目名称可能因设备和时期略有不同。",
+
+    "range.h": "时间范围",
+    "range.from": "开始",
+    "range.fromAria": "开始时间",
+    "range.to": "结束",
+    "range.toAria": "结束时间",
+    "range.preset7": "7 天",
+    "range.preset30": "30 天",
+    "range.preset365": "1 年",
+    "range.presetAll": "全部",
+
+    "stats.h": "统计",
+    "stats.dist": "移动距离",
+    "stats.time": "移动时间",
+    "stats.tracks": "路线",
+    "stats.points": "地点数",
+
+    "legend.h": "交通方式",
+    "legend.walk": "步行·跑步",
+    "legend.bike": "骑行",
+    "legend.car": "驾车·摩托车",
+    "legend.transit": "火车·公交",
+    "legend.air": "飞机·轮船",
+    "legend.other": "其他·未知",
+    "legend.gap": "记录中断的区间",
+    "legend.gapDashed": "虚线",
+
+    "player.h": "播放",
+    "player.playAria": "播放",
+    "player.pauseAria": "暂停",
+    "player.seekAria": "播放位置",
+    "player.speed": "速度",
+    "player.speed.60": "1 分钟 / 秒",
+    "player.speed.600": "10 分钟 / 秒",
+    "player.speed.1800": "30 分钟 / 秒",
+    "player.speed.3600": "1 小时 / 秒",
+    "player.speed.21600": "6 小时 / 秒",
+    "player.speed.86400": "1 天 / 秒",
+    "player.speed.604800": "1 周 / 秒",
+    "player.speed.2592000": "1 个月 / 秒",
+    "player.skip": "跳过 30 分钟以上的停留",
+    "player.follow": "播放时跟随当前位置",
+    "player.zoomAuto": "自动调整缩放",
+    "player.hold": "缩放变化时暂停播放",
+    "player.zoomFixed": "固定缩放",
+    "player.scaleAria": "固定的比例尺",
+    "player.scale.auto": "自动（当前地图比例尺）",
+    "player.scale.1000": "1:1,000",
+    "player.scale.5000": "1:5,000",
+    "player.scale.10000": "1:10,000",
+    "player.scale.25000": "1:25,000",
+    "player.scale.50000": "1:50,000",
+    "player.scale.100000": "1:100,000",
+    "player.scale.250000": "1:250,000",
+    "player.scale.500000": "1:500,000",
+    "player.scale.1000000": "1:1,000,000",
+    "player.scale.5000000": "1:5,000,000",
+    "player.hint": "自动调整时，比例尺由同一交通方式连续区间的实际速度和范围，以及播放倍速决定。固定时，播放期间地图比例尺始终不变。两种方式下，手动移动地图都会取消跟随。",
+
+    "options.h": "显示",
+    "options.smooth": "让点与点之间更平滑",
+    "options.despike": "移除测量误差的点",
+    "options.connect": "用虚线连接中断的区间",
+
+    "edit.h": "修正交通方式",
+    "edit.hint": "点击地图上的路线即可更改交通方式。",
+    "edit.exportNone": "还没有修改",
+    "edit.exportCount": "导出（含 {n} 处修改）",
+    "edit.exportCountOne": "导出（含 {n} 处修改）",
+
+    "share.save": "保存图片",
+    "share.saving": "保存中…",
+    "share.saved": "已保存 {name}。",
+    "share.failed": "无法保存图片：{msg}",
+    "share.blobFailed": "无法生成图片",
+    "share.periodLabel": "时间范围",
+    "share.distLabel": "移动距离",
+    "share.timeLabel": "移动时间",
+
+    "split.aria": "地图与操作面板的高度比例",
+    "footer.privacy": "隐私政策",
+
+    "status.loading": "读取中…（{mb} MB）",
+    "status.parsing": "解析中…（{mb} MB）",
+    "status.building": "正在构建路线…",
+    "status.loaded": "{n} 条路线（{from} ~ {to}）",
+    "status.tracksPoints": "{tracks} 条路线 / {points} 个点",
+    "status.gapsConnected": "已用虚线连接 {n} 处中断",
+    "status.thinned": "已从 {n} 个点中抽稀",
+    "status.despiked": "已移除 {n} 个跳变点（{pct}%）",
+    "status.unknownTypes": "无法识别的交通方式 {n} 种（{sample}）",
+
+    "err.badJson": "无法作为 JSON 读取。",
+    "err.noSegments": "找不到 semanticSegments。请选择从手机的 Google 地图应用导出的 location-history.json。",
+    "err.noTracks": "没有找到任何移动路线。",
+    "err.noTracksInRange": "这个时间范围内没有移动路线。",
+
+    "category.walk": "步行",
+    "category.bike": "骑行",
+    "category.car": "驾车",
+    "category.transit": "公共交通",
+    "category.air": "飞机·轮船",
+    "category.other": "其他",
+
+    "edittype.WALKING": "步行",
+    "edittype.RUNNING": "跑步",
+    "edittype.CYCLING": "骑行",
+    "edittype.IN_PASSENGER_VEHICLE": "汽车",
+    "edittype.MOTORCYCLING": "摩托车",
+    "edittype.IN_BUS": "公交车",
+    "edittype.IN_TRAIN": "火车",
+    "edittype.IN_SUBWAY": "地铁",
+    "edittype.IN_TRAM": "有轨电车",
+    "edittype.FLYING": "飞机",
+    "edittype.IN_FERRY": "轮船",
+    "edittype.UNKNOWN_ACTIVITY_TYPE": "未知",
+
+    "editor.whenSep": " ~ ",
+  },
+
+  // 繁体字 (台湾の言い回しに寄せた)。メニュー名は簡体字と同じく未確認。
+  "zh-Hant": {
+    "meta.title": "Timeline Visualizer — 在地圖上描繪你的 Google 地圖時間軸",
+    "meta.description": "把從 Google 地圖匯出的時間軸 JSON，用依交通方式分色的地圖與播放動畫回顧。所選檔案的內容只在你的裝置上處理，不會傳送到外部。",
+    "meta.ogTitle": "Timeline Visualizer",
+    "meta.ogDescription": "把 Google 地圖時間軸，變成依交通方式分色的地圖來回顧。所選檔案不會離開你的裝置。",
+
+    "promo.alt": "Passage: Mapping Your Moments — 把旅途的軌跡留在地圖上",
+
+    "masthead.sub": "在地圖上描繪你的 Google 地圖時間軸",
+    "lang.toggleAria": "顯示語言",
+
+    "drop.title": "把 JSON 拖到這裡",
+    "drop.sub": "或點選以選擇檔案",
+
+    "privacy.html": "從讀取到繪製在地圖上，所選檔案的內容<b>全部只在你的裝置上</b>處理。不會傳送到外部，也不會被儲存。",
+
+    "howto.summary": "如何匯出時間軸",
+    "howto.iphone.html": "Google 地圖應用程式 →&nbsp;個人資料相片 →&nbsp;設定 →&nbsp;位置資訊與隱私 →&nbsp;<b>匯出時間軸資料</b> →&nbsp;儲存到檔案",
+    "howto.android.html": "不是在地圖應用程式，而是在<b>裝置設定</b>中。設定 →&nbsp;位置資訊 →&nbsp;定位服務 →&nbsp;時間軸 →&nbsp;<b>匯出時間軸資料</b> →&nbsp;繼續 →&nbsp;選擇儲存位置",
+    "howto.note": "儲存下來的檔案名稱為 location-history.json。項目名稱可能因裝置與時期略有不同。",
+
+    "range.h": "時間範圍",
+    "range.from": "開始",
+    "range.fromAria": "開始時間",
+    "range.to": "結束",
+    "range.toAria": "結束時間",
+    "range.preset7": "7 天",
+    "range.preset30": "30 天",
+    "range.preset365": "1 年",
+    "range.presetAll": "全部",
+
+    "stats.h": "統計",
+    "stats.dist": "移動距離",
+    "stats.time": "移動時間",
+    "stats.tracks": "路線",
+    "stats.points": "地點數",
+
+    "legend.h": "交通方式",
+    "legend.walk": "步行·跑步",
+    "legend.bike": "自行車",
+    "legend.car": "開車·機車",
+    "legend.transit": "火車·公車",
+    "legend.air": "飛機·船",
+    "legend.other": "其他·不明",
+    "legend.gap": "記錄中斷的區間",
+    "legend.gapDashed": "虛線",
+
+    "player.h": "播放",
+    "player.playAria": "播放",
+    "player.pauseAria": "暫停",
+    "player.seekAria": "播放位置",
+    "player.speed": "速度",
+    "player.speed.60": "1 分鐘 / 秒",
+    "player.speed.600": "10 分鐘 / 秒",
+    "player.speed.1800": "30 分鐘 / 秒",
+    "player.speed.3600": "1 小時 / 秒",
+    "player.speed.21600": "6 小時 / 秒",
+    "player.speed.86400": "1 天 / 秒",
+    "player.speed.604800": "1 週 / 秒",
+    "player.speed.2592000": "1 個月 / 秒",
+    "player.skip": "跳過 30 分鐘以上的停留",
+    "player.follow": "播放時跟隨目前位置",
+    "player.zoomAuto": "自動調整縮放",
+    "player.hold": "縮放變化時暫停播放",
+    "player.zoomFixed": "固定縮放",
+    "player.scaleAria": "固定的比例尺",
+    "player.scale.auto": "自動（目前地圖比例尺）",
+    "player.scale.1000": "1:1,000",
+    "player.scale.5000": "1:5,000",
+    "player.scale.10000": "1:10,000",
+    "player.scale.25000": "1:25,000",
+    "player.scale.50000": "1:50,000",
+    "player.scale.100000": "1:100,000",
+    "player.scale.250000": "1:250,000",
+    "player.scale.500000": "1:500,000",
+    "player.scale.1000000": "1:1,000,000",
+    "player.scale.5000000": "1:5,000,000",
+    "player.hint": "自動調整時，比例尺由同一交通方式連續區間的實際速度與範圍，以及播放倍速決定。固定時，播放期間地圖比例尺始終不變。兩種方式下，手動移動地圖都會取消跟隨。",
+
+    "options.h": "顯示",
+    "options.smooth": "讓點與點之間更平滑",
+    "options.despike": "移除測量誤差的點",
+    "options.connect": "用虛線連接中斷的區間",
+
+    "edit.h": "修正交通方式",
+    "edit.hint": "點選地圖上的路線即可變更交通方式。",
+    "edit.exportNone": "尚未修改",
+    "edit.exportCount": "匯出（含 {n} 處修改）",
+    "edit.exportCountOne": "匯出（含 {n} 處修改）",
+
+    "share.save": "儲存圖片",
+    "share.saving": "儲存中…",
+    "share.saved": "已儲存 {name}。",
+    "share.failed": "無法儲存圖片：{msg}",
+    "share.blobFailed": "無法產生圖片",
+    "share.periodLabel": "時間範圍",
+    "share.distLabel": "移動距離",
+    "share.timeLabel": "移動時間",
+
+    "split.aria": "地圖與操作面板的高度比例",
+    "footer.privacy": "隱私權政策",
+
+    "status.loading": "讀取中…（{mb} MB）",
+    "status.parsing": "解析中…（{mb} MB）",
+    "status.building": "正在建立路線…",
+    "status.loaded": "{n} 條路線（{from} ~ {to}）",
+    "status.tracksPoints": "{tracks} 條路線 / {points} 個點",
+    "status.gapsConnected": "已用虛線連接 {n} 處中斷",
+    "status.thinned": "已從 {n} 個點中抽稀",
+    "status.despiked": "已移除 {n} 個跳動點（{pct}%）",
+    "status.unknownTypes": "無法辨識的交通方式 {n} 種（{sample}）",
+
+    "err.badJson": "無法以 JSON 讀取。",
+    "err.noSegments": "找不到 semanticSegments。請選擇從手機的 Google 地圖應用程式匯出的 location-history.json。",
+    "err.noTracks": "沒有找到任何移動路線。",
+    "err.noTracksInRange": "這個時間範圍內沒有移動路線。",
+
+    "category.walk": "步行",
+    "category.bike": "自行車",
+    "category.car": "開車",
+    "category.transit": "大眾運輸",
+    "category.air": "飛機·船",
+    "category.other": "其他",
+
+    "edittype.WALKING": "步行",
+    "edittype.RUNNING": "跑步",
+    "edittype.CYCLING": "自行車",
+    "edittype.IN_PASSENGER_VEHICLE": "汽車",
+    "edittype.MOTORCYCLING": "機車",
+    "edittype.IN_BUS": "公車",
+    "edittype.IN_TRAIN": "火車",
+    "edittype.IN_SUBWAY": "捷運",
+    "edittype.IN_TRAM": "路面電車",
+    "edittype.FLYING": "飛機",
+    "edittype.IN_FERRY": "船",
+    "edittype.UNKNOWN_ACTIVITY_TYPE": "不明",
+
+    "editor.whenSep": " ~ ",
+  },
 };
 
 /* Passage のバナー画像 (640x100 JPEG) のファイル名。
@@ -1121,20 +1435,40 @@ const PROMO_SRC = {
 
 const LANG_STORAGE_KEY = "tv-lang";
 
-/* 対応言語。I18N に辞書を足してここに 1 行加えれば、?lang= の受け付け、
-   端末の言語からの自動判定、切替ボタンの選択状態はすべて追従する
-   (ボタン自体は id="lang-<code>" でマークアップ側に置く)。 */
-const LANGS = ["ja", "en", "ko"];
-const LOCALES = { ja: "ja-JP", en: "en-US", ko: "ko-KR" };
+/* 対応言語。I18N に辞書を足してここへ 1 行と、見出しの <select> に 1 行
+   足せば、?lang= の受け付けも端末の言語からの自動判定も追従する。 */
+const LANGS = ["ja", "en", "ko", "zh-Hans", "zh-Hant"];
+const LOCALES = {
+  ja: "ja-JP", en: "en-US", ko: "ko-KR", "zh-Hans": "zh-CN", "zh-Hant": "zh-TW",
+};
 /** どれとも判定できなかったときの言語 (日本語圏向けに作った道具なので ja) */
 const FALLBACK_LANG = "ja";
+
+/**
+ * 言語タグ ("ko-KR", "zh-TW", "ja-JP-u-ca-japanese" など) を、対応している
+ * 言語のどれかに寄せる。合うものが無ければ null。
+ *
+ * 中国語だけは先頭の "zh" では足りない。簡体字と繁体字は同じ zh でも別物で、
+ * 字体は Hant/Hans という副タグか、地域 (TW/HK/MO なら繁体) に出る。
+ * どちらも書かれていない素の "zh" は、話者の多い簡体字に寄せる。
+ */
+function matchLang(tag) {
+  const t = String(tag || "").toLowerCase();
+  if (!t) return null;
+  const base = t.split("-")[0];
+  if (base === "zh") {
+    return /(^|-)(hant|tw|hk|mo)(-|$)/.test(t) ? "zh-Hant" : "zh-Hans";
+  }
+  for (const code of LANGS) if (code.toLowerCase() === t || code === base) return code;
+  return null;
+}
 
 /**
  * 端末の言語設定から表示言語を選ぶ。
  *
  * navigator.language ひとつではなく navigator.languages を先頭から見る。
  * 第 1 希望が未対応でも第 2 希望以降に ko や ja を置いている端末 (例:
- * ["zh-TW", "ko-KR"]) を拾えるようにするため。対応言語がひとつも無ければ、
+ * ["th-TH", "ja-JP"]) を拾えるようにするため。対応言語がひとつも無ければ、
  * 世界のどこから来ても最低限読める英語にする。
  */
 function detectLangFromDevice() {
@@ -1142,10 +1476,8 @@ function detectLangFromDevice() {
     ? navigator.languages
     : [navigator.language || ""];
   for (const pref of prefs) {
-    // "ko-KR" や "ja-JP-u-ca-japanese" のような形で来るので、地域や
-    // 拡張を落とした先頭の言語コードだけで判定する。
-    const base = String(pref).toLowerCase().split("-")[0];
-    if (LANGS.includes(base)) return base;
+    const matched = matchLang(pref);
+    if (matched) return matched;
   }
   return "en";
 }
@@ -1153,10 +1485,11 @@ function detectLangFromDevice() {
 /** ?lang= → localStorage (前回の手動選択) → 端末の言語 → ja */
 function resolveInitialLang() {
   try {
-    const qp = new URLSearchParams(location.search).get("lang");
-    if (LANGS.includes(qp)) return qp;
-    const stored = localStorage.getItem(LANG_STORAGE_KEY);
-    if (LANGS.includes(stored)) return stored;
+    // ?lang=zh-hant のような大文字小文字の違いも matchLang が吸収する
+    const qp = matchLang(new URLSearchParams(location.search).get("lang"));
+    if (qp) return qp;
+    const stored = matchLang(localStorage.getItem(LANG_STORAGE_KEY));
+    if (stored) return stored;
     return detectLangFromDevice();
   } catch (e) {
     return FALLBACK_LANG; // localStorage / URL が使えない環境向けの最後の砦
@@ -1225,10 +1558,8 @@ function applyLang(lang) {
     promoImg.alt = t("promo.alt");
   }
 
-  for (const code of LANGS) {
-    const btn = document.getElementById("lang-" + code);
-    if (btn) btn.setAttribute("aria-pressed", String(code === lang));
-  }
+  const langSelect = document.getElementById("lang");
+  if (langSelect) langSelect.value = lang;
 
   fmtClock = buildClockFormat();
 
@@ -1844,21 +2175,22 @@ function fmtDistance(m) {
   return Math.round(m) + " m";
 }
 
+/* 時間の単位。i18n の辞書ではなくここに置くのは、日 / 時間 / 分 を
+   繋ぐ形が言語ごとに違い、キー 3 つでは表せないため。 */
+const DURATION_UNITS = {
+  ja: { d: "日 ", h: "時間 ", m: "分", sep: "" },
+  en: { d: "d ", h: "h ", m: "m", sep: "" },
+  ko: { d: "일 ", h: "시간 ", m: "분", sep: "" },
+  "zh-Hans": { d: "天", h: "小时", m: "分钟", sep: "" },
+  "zh-Hant": { d: "天", h: "小時", m: "分鐘", sep: "" },
+};
+
 function fmtDuration(ms) {
   const h = Math.floor(ms / 3600000), m = Math.round((ms % 3600000) / 60000);
-  if (LANG === "en") {
-    if (h >= 24) return Math.floor(h / 24) + "d " + (h % 24) + "h";
-    if (h) return h + "h " + m + "m";
-    return m + "m";
-  }
-  if (LANG === "ko") {
-    if (h >= 24) return Math.floor(h / 24) + "일 " + (h % 24) + "시간";
-    if (h) return h + "시간 " + m + "분";
-    return m + "분";
-  }
-  if (h >= 24) return Math.floor(h / 24) + "日 " + (h % 24) + "時間";
-  if (h) return h + "時間 " + m + "分";
-  return m + "分";
+  const u = DURATION_UNITS[LANG] || DURATION_UNITS.ja;
+  if (h >= 24) return Math.floor(h / 24) + u.d + (h % 24) + u.h.trimEnd();
+  if (h) return h + u.h + m + u.m;
+  return m + u.m;
 }
 
 /** 言語切り替えのたびに LOCALE で作り直す (applyLang から呼ぶ) */
@@ -2159,10 +2491,7 @@ const skipEl = $("skip"), holdEl = $("hold"), exportBtn = $("export"), shareBtn 
 const shareTextEl = $("share-text");
 const zoomAutoEl = $("zoom-auto"), zoomFixedEl = $("zoom-fixed"), scaleEl = $("scale");
 
-for (const code of LANGS) {
-  const btn = document.getElementById("lang-" + code);
-  if (btn) btn.addEventListener("click", () => applyLang(code));
-}
+$("lang").addEventListener("change", (e) => applyLang(e.target.value));
 
 function setStatus(msg, isError) {
   statusEl.textContent = msg || "";
@@ -3296,8 +3625,10 @@ function composeShareImage(shot) {
   // 狭い画面では文字と余白を少しだけ詰める
   const dense = cssW < 420 ? 0.88 : 1;
   const u = (v) => v * k * dense;
-  const face = '-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", ' +
-               '"Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", Arial, sans-serif';
+  // 書体は CSS の --font だけが持つ。言語ごとに中身が変わるので、描くたびに読む。
+  // (改行のまま canvas の font へ渡すと解釈されないので、空白は 1 つに潰す)
+  const face = getComputedStyle(document.documentElement)
+    .getPropertyValue("--font").replace(/\s+/g, " ").trim() || "sans-serif";
   const font = (size, weight) => `${weight || 400} ${u(size)}px ${face}`;
 
   const css = getComputedStyle(document.documentElement);
