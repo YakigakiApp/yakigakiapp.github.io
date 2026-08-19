@@ -71,7 +71,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnEn = document.getElementById('btn-en');
     const body = document.body;
 
+    let currentLang = 'ja';
+
+    /**
+     * 画像を今の言語のものにする。
+     *
+     * data-defer が残っているものは、まだ画面に入っていない (下の
+     * deferredObserver 参照) ので触らない。ここで src を入れてしまうと、
+     * 見てもいない画像を言語の数だけ落とすことになる。
+     * 既に同じ画像を指しているときに代入し直さないのは、それだけで
+     * ブラウザが読み込みをやり直すため。
+     */
+    function showImage(img, lang) {
+        if (img.hasAttribute('data-defer')) return;
+        const src = lang === 'en' ? img.dataset.en : img.dataset.ja;
+        if (src && img.getAttribute('src') !== src) img.src = src;
+    }
+
+    /**
+     * ギャラリーの画像は、画面に入る手前になるまで src を入れない。
+     *
+     * loading="lazy" だけに任せると、回線が速いと判断されたときに数千 px 先まで
+     * 先読みされる。ギャラリーは 3,000 px ほど下にあり、実測では 7 枚とも最初の
+     * 表示で落ちてきていた。自前で持てば、見た分だけで済む。
+     */
+    const deferredObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            deferredObserver.unobserve(entry.target);
+            entry.target.removeAttribute('data-defer');
+            showImage(entry.target, currentLang);
+        });
+    }, { rootMargin: '400px' });
+    document.querySelectorAll('img[data-defer]').forEach(img => deferredObserver.observe(img));
+
     function setLanguage(lang) {
+        currentLang = lang === 'en' ? 'en' : 'ja';
         const metaDesc = document.querySelector('meta[name="description"]');
         const langImages = document.querySelectorAll('.lang-img');
         const isLegalPage = window.location.pathname.includes('legal.html');
@@ -91,9 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Swap to English images
-            langImages.forEach(img => {
-                if (img.dataset.en) img.src = img.dataset.en;
-            });
+            langImages.forEach(img => showImage(img, 'en'));
         } else {
             body.classList.remove('lang-en');
             body.classList.add('lang-ja');
@@ -109,9 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Swap to Japanese images
-            langImages.forEach(img => {
-                if (img.dataset.ja) img.src = img.dataset.ja;
-            });
+            langImages.forEach(img => showImage(img, 'ja'));
         }
         localStorage.setItem('preferred-lang', lang);
     }
