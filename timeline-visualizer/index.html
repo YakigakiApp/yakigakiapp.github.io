@@ -526,7 +526,7 @@
     <details class="howto">
       <summary data-i18n="howto.summary">タイムラインの書き出し方</summary>
       <h3>iPhone</h3>
-      <p data-i18n-html="howto.iphone.html">Google マップアプリ →&nbsp;プロフィール写真 →&nbsp;設定 →&nbsp;個人的なコンテンツ →&nbsp;<b>タイムライン データをエクスポート</b> →&nbsp;ファイルに保存</p>
+      <p data-i18n-html="howto.iphone.html">Google マップアプリ →&nbsp;プロフィール写真 →&nbsp;設定 →&nbsp;位置情報とプライバシー →&nbsp;<b>タイムライン データをエクスポート</b> →&nbsp;ファイルに保存</p>
       <h3>Android</h3>
       <p data-i18n-html="howto.android.html">マップアプリではなく<b>端末の設定</b>から。設定 →&nbsp;位置情報 →&nbsp;位置情報サービス →&nbsp;タイムライン →&nbsp;<b>タイムライン データをエクスポート</b> →&nbsp;続行 →&nbsp;保存先を選ぶ</p>
       <p class="note" data-i18n="howto.note">保存されるのは location-history.json です。項目名は端末や時期によって多少異なる場合があります。</p>
@@ -697,7 +697,7 @@ const I18N = {
     "privacy.html": "選択したファイルの中身は、読込みから地図上への描画まで、<b>すべてお使いの端末の中だけ</b>で処理されます。外部に送信されることも、保存されることもありません。",
 
     "howto.summary": "タイムラインの書き出し方",
-    "howto.iphone.html": "Google マップアプリ →&nbsp;プロフィール写真 →&nbsp;設定 →&nbsp;個人的なコンテンツ →&nbsp;<b>タイムライン データをエクスポート</b> →&nbsp;ファイルに保存",
+    "howto.iphone.html": "Google マップアプリ →&nbsp;プロフィール写真 →&nbsp;設定 →&nbsp;位置情報とプライバシー →&nbsp;<b>タイムライン データをエクスポート</b> →&nbsp;ファイルに保存",
     "howto.android.html": "マップアプリではなく<b>端末の設定</b>から。設定 →&nbsp;位置情報 →&nbsp;位置情報サービス →&nbsp;タイムライン →&nbsp;<b>タイムライン データをエクスポート</b> →&nbsp;続行 →&nbsp;保存先を選ぶ",
     "howto.note": "保存されるのは location-history.json です。項目名は端末や時期によって多少異なる場合があります。",
 
@@ -836,10 +836,9 @@ const I18N = {
     "privacy.html": "From loading to drawing on the map, the contents of the file you select are processed <b>entirely on your own device</b>. Nothing is ever sent out or stored elsewhere.",
 
     "howto.summary": "How to export your Timeline",
-    // 以下の iPhone / Android の英語メニュー名は未確認 (この環境から Google /
-    // 各ストアへアクセスできず、実機の英語版 UI と突き合わせられなかった)。
-    // 公開前に実際の英語 UI と照合すること。
-    "howto.iphone.html": "Google Maps app →&nbsp;your profile picture →&nbsp;Settings →&nbsp;Personal content →&nbsp;<b>Export Timeline data</b> →&nbsp;Save to Files",
+    // iPhone の項目名は実機で確認済み (Location & Privacy。以前は Personal content と
+    // 書いていたが、そういう項目は無かった)。Android の方は未確認のまま。
+    "howto.iphone.html": "Google Maps app →&nbsp;your profile picture →&nbsp;Settings →&nbsp;Location &amp; Privacy →&nbsp;<b>Export Timeline data</b> →&nbsp;Save to Files",
     "howto.android.html": "From the <b>device Settings</b>, not the Maps app. Settings →&nbsp;Location →&nbsp;Location services →&nbsp;Timeline →&nbsp;<b>Export Timeline data</b> →&nbsp;Continue →&nbsp;choose where to save",
     "howto.note": "The saved file is named location-history.json. Field names may vary slightly by device and version.",
 
@@ -978,10 +977,11 @@ const I18N = {
     "privacy.html": "선택한 파일의 내용은 불러오기부터 지도에 그리기까지 <b>모두 사용 중인 기기 안에서만</b> 처리됩니다. 외부로 전송되거나 저장되는 일은 없습니다.",
 
     "howto.summary": "타임라인 내보내는 방법",
-    // 下の iPhone / Android の韓国語メニュー名は、英語版と同じく未確認
-    // (この環境から Google へアクセスできず、実機の韓国語 UI と突き合わせ
-    // られなかった)。公開前に実際の韓国語 UI と照合すること。
-    "howto.iphone.html": "Google 지도 앱 →&nbsp;프로필 사진 →&nbsp;설정 →&nbsp;개인 콘텐츠 →&nbsp;<b>타임라인 데이터 내보내기</b> →&nbsp;파일에 저장",
+    // 韓国語のメニュー名は未確認 (この環境から Google へアクセスできず、実機の
+    // 韓国語 UI と突き合わせられなかった)。項目そのものは日英で実機確認した
+    // 「位置情報とプライバシー / Location & Privacy」に合わせてあるので、
+    // 直すとしたら訳語だけのはず。
+    "howto.iphone.html": "Google 지도 앱 →&nbsp;프로필 사진 →&nbsp;설정 →&nbsp;위치 및 개인정보 보호 →&nbsp;<b>타임라인 데이터 내보내기</b> →&nbsp;파일에 저장",
     "howto.android.html": "지도 앱이 아니라 <b>기기 설정</b>에서. 설정 →&nbsp;위치 →&nbsp;위치 서비스 →&nbsp;타임라인 →&nbsp;<b>타임라인 데이터 내보내기</b> →&nbsp;계속 →&nbsp;저장 위치 선택",
     "howto.note": "저장되는 파일은 location-history.json입니다. 항목 이름은 기기나 시기에 따라 조금씩 다를 수 있습니다.",
 
