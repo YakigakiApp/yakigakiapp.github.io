@@ -169,8 +169,19 @@ nav a:hover {
     justify-content: center;
 }
 
-.hero-image img {
+/* WebP を <source> で先に出すため、画像は <picture> に包んである。
+   flex の対象になるのは包みの方なので、寸法の指定はそちらにも要る。 */
+.hero-image picture {
+    display: block;
     width: 100%;
+    max-width: 380px;
+}
+
+.hero-image img {
+    /* height を書かないと、HTML の height="1731" がそのまま高さになって
+       縦に伸びる (width/height 属性は CSS の指定としても効くため)。 */
+    width: 100%;
+    height: auto;
     max-width: 380px;
     border-radius: 40px;
     box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
@@ -250,7 +261,13 @@ nav a:hover {
     display: none; /* Chrome/Safari */
 }
 
+.gallery-scroll picture {
+    flex: none;
+    display: block;
+}
+
 .gallery-scroll img {
+    width: auto;   /* 高さだけ決めて、幅は元の比率に任せる (上の hero と同じ理由) */
     height: 500px;
     border-radius: 24px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
@@ -559,6 +576,7 @@ header.scrolled {
         order: -1;
     }
     
+    .hero-image picture,
     .hero-image img {
         max-width: 300px;
     }

@@ -84,7 +84,17 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function showImage(img, lang) {
         if (img.hasAttribute('data-defer')) return;
-        const src = lang === 'en' ? img.dataset.en : img.dataset.ja;
+        const pick = el => (lang === 'en' ? el.dataset.en : el.dataset.ja);
+        const picture = img.parentElement;
+        if (picture && picture.tagName === 'PICTURE') {
+            // <source> を先に入れる。あとにすると img の方が先に選ばれて、
+            // JPEG を落としてから WebP に差し替える二度手間になる。
+            picture.querySelectorAll('source[data-ja]').forEach(source => {
+                const url = pick(source);
+                if (url && source.getAttribute('srcset') !== url) source.srcset = url;
+            });
+        }
+        const src = pick(img);
         if (src && img.getAttribute('src') !== src) img.src = src;
     }
 
