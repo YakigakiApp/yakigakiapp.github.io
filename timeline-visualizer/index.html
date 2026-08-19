@@ -16,6 +16,17 @@
      日に地図が一切描けずツールごと死ぬ。ファイルは npm の配布物そのままで、
      更新するときはファイル名の版も一緒に上げる (古い版のキャッシュと混ざらない)。 -->
 <link href="vendor/maplibre-gl-5.24.0.css" rel="stylesheet" />
+<!-- Google タグ (gtag.js)。送るのは訪問そのもの (ページ URL・参照元・端末や
+     言語・IP から推定した地域) だけ。読み込んだタイムラインのファイルは
+     ここから送られない — 中身はページの外に出さないまま処理している。 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-K0WB15YGY2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-K0WB15YGY2');
+</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3495204307936814"
         crossorigin="anonymous"></script>
 <style>
