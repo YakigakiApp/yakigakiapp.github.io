@@ -597,6 +597,7 @@
         <option value="21600" data-i18n="player.speed.21600">6時間 / 秒</option>
         <option value="86400" data-i18n="player.speed.86400">1日 / 秒</option>
         <option value="604800" data-i18n="player.speed.604800">1週間 / 秒</option>
+        <option value="2592000" data-i18n="player.speed.2592000">1ヶ月 / 秒</option>
       </select>
     </div>
     <div class="checks" style="margin-top:14px">
@@ -739,6 +740,7 @@ const I18N = {
     "player.speed.21600": "6時間 / 秒",
     "player.speed.86400": "1日 / 秒",
     "player.speed.604800": "1週間 / 秒",
+    "player.speed.2592000": "1ヶ月 / 秒",
     "player.skip": "30分以上の停止を飛ばす",
     "player.follow": "再生中に現在地を追う",
     "player.zoomAuto": "縮尺を自動変更する",
@@ -880,6 +882,7 @@ const I18N = {
     "player.speed.21600": "6 hours / sec",
     "player.speed.86400": "1 day / sec",
     "player.speed.604800": "1 week / sec",
+    "player.speed.2592000": "1 month / sec",
     "player.skip": "Skip stops of 30+ minutes",
     "player.follow": "Follow current position while playing",
     "player.zoomAuto": "Auto-adjust zoom",
@@ -1023,6 +1026,7 @@ const I18N = {
     "player.speed.21600": "6시간 / 초",
     "player.speed.86400": "1일 / 초",
     "player.speed.604800": "1주일 / 초",
+    "player.speed.2592000": "1개월 / 초",
     "player.skip": "30분 이상 멈춘 구간 건너뛰기",
     "player.follow": "재생 중 현재 위치 따라가기",
     "player.zoomAuto": "축척 자동 변경",
@@ -2582,6 +2586,7 @@ const ZOOM_STEP = 0.5;      // 目標値の丸め幅。細かい差で遷移を�
  */
 const MAX_ZOOM = 13.5;
 const MAX_ZOOM_BY_RATE = [
+  [2592000, 5.5], // 1ヶ月/秒 … 画面幅 1,700km。国内の端から端までが一画面に入る
   [604800, 7],    // 1週間/秒 … 画面幅 500km。地方どうしの行き来が見える
   [86400, 8.5],   // 1日/秒   … 画面幅 180km。県をまたぐ移動が見える
   [21600, 10],    // 6時間/秒 … 画面幅 60km。都市圏が丸ごと入る
