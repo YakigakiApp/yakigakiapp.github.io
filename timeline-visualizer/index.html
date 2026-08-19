@@ -1431,13 +1431,34 @@ function sliceSemanticSegments(text) {
  * 出てこない。そこで点ごとに移動手段を決め、切り替わる所で経路を分ける。
  */
 function splitByActivity(path, overlapping, timed) {
-  // その時刻を含む activity。無ければ時間的に最も近いものへ寄せる
-  // (滞在中の点などどの移動にも属さない点を、その都度「不明」にしないため)
-  const pick = (t) => {
-    let best = -1, bestGap = Infinity;
+  /*
+   * 移動手段は点ではなく、点と点の「間」ごとに決める。
+   *
+   * 点の時刻で決めると、長い乗車が丸ごと取り違えられる。iPhone の書き出しでは
+   * 経路の点が分単位に丸められており、25km の乗車が始点と終点の 2 点だけで
+   * 残ることがある。その 2 点の時刻は、数秒の差で前後の徒歩の側へはみ出す。
+   * すると乗車中の点が 1 つも無いまま、乗車ぶんが徒歩として描かれる
+   * (実データで確認: 18:45:00 の点は 18:45:12 に終わる徒歩の中、19:31:00 の
+   * 点は 19:30:55 に始まる次の徒歩の中に入り、間の電車が選ばれなかった)。
+   *
+   * 区間との重なりが最も長い activity を選べば、点がどちらへ転んでも
+   * 間の 46 分を占めている電車が選ばれる。
+   */
+  const pickSpan = (t0, t1) => {
+    let best = -1, bestOverlap = 0;
     for (const i of overlapping) {
       const a = timed[i];
-      const gap = t < a.start ? a.start - t : (t > a.end ? t - a.end : 0);
+      const overlap = Math.min(t1, a.end) - Math.max(t0, a.start);
+      if (overlap > bestOverlap) { bestOverlap = overlap; best = i; }
+    }
+    if (best >= 0) return best;
+    // どの移動とも重ならない区間 (滞在中など) は、時間的に最も近いものへ寄せる。
+    // その都度「不明」にすると、滞在を挟むたびに経路が灰色で分断されるため。
+    const mid = (t0 + t1) / 2;
+    let bestGap = Infinity;
+    for (const i of overlapping) {
+      const a = timed[i];
+      const gap = mid < a.start ? a.start - mid : (mid > a.end ? mid - a.end : 0);
       if (gap < bestGap) { bestGap = gap; best = i; }
     }
     return best;
@@ -1459,9 +1480,12 @@ function splitByActivity(path, overlapping, timed) {
     });
   };
 
-  let from = 0, act = pick(points[0].t);
-  for (let i = 1; i < points.length; i++) {
-    const next = pick(points[i].t);
+  if (points.length < 2) return parts;
+
+  // 区間 i は points[i] と points[i+1] の間。手段が変わる点で経路を分ける。
+  let from = 0, act = pickSpan(points[0].t, points[1].t);
+  for (let i = 1; i < points.length - 1; i++) {
+    const next = pickSpan(points[i].t, points[i + 1].t);
     if (next === act) continue;
     emit(from, i + 1, act); // 区切りの点は次の区間の始点でもある(線を途切れさせない)
     from = i;
