@@ -1272,6 +1272,14 @@ const CATEGORY_OF_TYPE = {
   IN_TRAIN: "transit", IN_SUBWAY: "transit", IN_TRAM: "transit", IN_BUS: "transit",
   IN_FUNICULAR: "transit",
   FLYING: "air", IN_FERRY: "air", SAILING: "air",
+
+  // travelMode 系の短い綴り。手元の書き出し (Android / iPhone とも) では
+  // 見ていないが、拾えたときに「その他」へ落とさずに済むよう入れてある。
+  WALK: "walk", RUN: "walk",
+  CYCLE: "bike", BICYCLE: "bike", BIKE: "bike",
+  DRIVE: "car", MOTORCYCLE: "car", TAXI: "car",
+  TRAIN: "transit", SUBWAY: "transit", TRAM: "transit", BUS: "transit", TRANSIT: "transit",
+  FLY: "air", FLIGHT: "air", FERRY: "air", BOAT: "air",
 };
 
 // 端末によって type の書式が違う。Android は IN_PASSENGER_VEHICLE、
@@ -1495,6 +1503,23 @@ function splitByActivity(path, overlapping, timed) {
   return parts;
 }
 
+/**
+ * セグメントから移動手段の文字列を取り出す。
+ *
+ * 通常は activity.topCandidate.type (Android は IN_TRAIN、iPhone は
+ * "in train" のような綴り。どちらも normalizeType が揃える)。
+ * 書き出しの経路によっては travelMode (WALK / DRIVE のような短い綴り) の
+ * 側にしか入っていないという話があり、手元の書き出しでは見ていないが、
+ * あれば拾う。無ければこれまでどおり null で「その他」に落ちる。
+ */
+function rawTravelType(seg) {
+  const activity = seg.activity;
+  const candidate = (activity && activity.topCandidate) || {};
+  return candidate.type || candidate.travelMode ||
+         (activity && activity.travelMode) ||
+         (seg.waypointPath && seg.waypointPath.travelMode) || null;
+}
+
 function parseTimeline(json) {
   // ルートが配列の変種と、{ semanticSegments: [...] } の両方を受ける
   const segments = Array.isArray(json) ? json : (json && json.semanticSegments);
@@ -1515,7 +1540,7 @@ function parseTimeline(json) {
 
     // activity は timelinePath と同じセグメントに同居することが多い。
     // 先に読んでおかないと移動手段が取れず、すべて「その他」になる。
-    const rawType = (seg.activity && seg.activity.topCandidate && seg.activity.topCandidate.type) || null;
+    const rawType = rawTravelType(seg);
     const ownType = normalizeType(rawType);
     // type が付いていない経路は数えない(正常な Android データでも出てしまう)。
     // 診断に効くのは正規化前の文字列なので、そちらを控える。
@@ -1562,7 +1587,7 @@ function parseTimeline(json) {
       if (ll) {
         visits.push({
           start, end, lat: ll[0], lng: ll[1],
-          placeId: c.placeId || null,
+          placeId: c.placeId || c.placeID || null,   // iPhone は placeID
           semanticType: c.semanticType || null,
         });
       }
