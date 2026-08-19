@@ -1423,15 +1423,18 @@ const I18N = {
 };
 
 /* Passage のバナー画像 (640x100 JPEG) のファイル名。
- * ja/en それぞれ別ファイルにしてあり、applyLang() から img の src を差し替える。
- * マークアップ側の <img src> は JS 実行前の初期表示として ja のものを直書きしてあり
- * (常に PROMO_SRC.ja と同じ内容)、この定数はその後の言語切り替え専用。 */
+ * applyLang() から img の src を差し替える。マークアップ側の <img src> は
+ * JS 実行前の初期表示として ja のものを直書きしてあり (常に PROMO_SRC.ja と
+ * 同じ内容)、この定数はその後の言語切り替え専用。
+ *
+ * 絵があるのは日英だけ。ここに無い言語は英語版を出す (下の PROMO_FALLBACK)。
+ * 言語を足すたびにここへ書き足す形にしていたら、中国語を足したときに
+ * 漏らしてバナーがリンク切れになったので、既定値の側で受けるようにした。 */
 const PROMO_SRC = {
   ja: "promo-ja.jpg",
   en: "promo-en.jpg",
-  // 韓国語版の絵はまだ無いので英語版を出す。用意できたら promo-ko.jpg に差し替える。
-  ko: "promo-en.jpg",
 };
+const PROMO_FALLBACK = "promo-en.jpg";
 
 const LANG_STORAGE_KEY = "tv-lang";
 
@@ -1554,7 +1557,7 @@ function applyLang(lang) {
   // への行き先) はページ末尾のスクリプトが端末判定で決めるので、ここでは触らない。
   const promoImg = document.getElementById("promo-img");
   if (promoImg) {
-    promoImg.src = PROMO_SRC[lang];
+    promoImg.src = PROMO_SRC[lang] || PROMO_FALLBACK;
     promoImg.alt = t("promo.alt");
   }
 
