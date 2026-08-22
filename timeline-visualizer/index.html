@@ -2094,12 +2094,66 @@ function filterTracks(tracks, dayIndex, fromMs, toMs) {
  * 間引き / 幾何計算
  * ============================================================ */
 
-function haversine(a, b) {
-  const R = 6371000, rad = Math.PI / 180;
+const EARTH_R = 6371000; // 地球の半径(m)
+
+/** 2 点を結ぶ大円の中心角(ラジアン) */
+function centralAngle(a, b) {
+  const rad = Math.PI / 180;
   const dLat = (b.lat - a.lat) * rad, dLng = (b.lng - a.lng) * rad;
   const la1 = a.lat * rad, la2 = b.lat * rad;
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
+  return 2 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+function haversine(a, b) {
+  return EARTH_R * centralAngle(a, b);
+}
+
+/* ------------------------------------------------------------
+ * 大圏航路(球面上の最短経路)
+ *
+ * 記録が途切れた区間は、地図の上の直線ではなく実際に通ったであろう
+ * 球面上の最短経路で結ぶ。メルカトル図法の直線は緯度が高いほど、また
+ * 距離が長いほど本当の経路から離れるので、飛行機で大洋を渡るような
+ * 区間ほどずれが目立つ。短い空白では折れ線が 1 本になり、直線と一致する。
+ * ------------------------------------------------------------ */
+
+const GC_STEP_DEG = 1;        // 折れ線に刻む間隔。1° ≒ 111km
+const GC_MAX_SEGMENTS = 128;
+
+/**
+ * 大圏航路上の、a から b へ割合 f だけ進んだ地点。経度は a から連続する
+ * 値で返す(日付変更線をまたぐ区間で、線が地球を逆回りしないように)。
+ */
+function gcPoint(a, b, angle, f) {
+  const rad = Math.PI / 180, deg = 180 / Math.PI;
+  const sin = Math.sin(angle);
+  // 同じ点、またはほぼ対蹠点。最短経路が定まらないので直線で扱う
+  if (!(sin > 1e-12)) return [a.lng + (b.lng - a.lng) * f, a.lat + (b.lat - a.lat) * f];
+
+  const A = Math.sin((1 - f) * angle) / sin, B = Math.sin(f * angle) / sin;
+  const la1 = a.lat * rad, lo1 = a.lng * rad, la2 = b.lat * rad, lo2 = b.lng * rad;
+  const x = A * Math.cos(la1) * Math.cos(lo1) + B * Math.cos(la2) * Math.cos(lo2);
+  const y = A * Math.cos(la1) * Math.sin(lo1) + B * Math.cos(la2) * Math.sin(lo2);
+  const z = A * Math.sin(la1) + B * Math.sin(la2);
+  const lat = Math.atan2(z, Math.hypot(x, y)) * deg;
+  const lng = Math.atan2(y, x) * deg;
+  return [a.lng + ((lng - a.lng + 540) % 360 - 180), lat];
+}
+
+/** 大圏航路の折れ線。f を渡すと、始点からその割合までの部分だけを返す */
+function greatCircle(a, b, angle, f = 1) {
+  const end = Math.min(1, Math.max(0, f));
+  const steps = Math.ceil(angle * (180 / Math.PI) / GC_STEP_DEG);
+  const n = Math.max(1, Math.min(GC_MAX_SEGMENTS, steps));
+  const coords = [[a.lng, a.lat]];
+  for (let i = 1; i < n; i++) {
+    const fi = i / n;
+    if (fi >= end) break;
+    coords.push(gcPoint(a, b, angle, fi));
+  }
+  coords.push(gcPoint(a, b, angle, end));
+  return coords;
 }
 
 /** 度単位の二乗距離。間引き判定にしか使わないので厳密でなくてよい */
@@ -2313,7 +2367,7 @@ const mapReady = new Promise((resolve) => {
  * 途切れた区間の接続
  *
  * 経路と経路の間は記録が無い。GPS が切れていた区間では終点と次の始点が
- * 離れ、線が途切れて見える。ここを直線でつなぐが、記録された経路とは
+ * 離れ、線が途切れて見える。ここを大圏航路でつなぐが、記録された経路とは
  * 区別できるよう点線で描く(実際にその道を通った証拠は無いため)。
  * ------------------------------------------------------------ */
 
@@ -2361,7 +2415,14 @@ function buildGaps(tracks) {
     if (seconds > 0 && dist / seconds > (CATEGORY_MAX_SPEED[judge] ?? CATEGORY_MAX_SPEED.other)) continue;
 
     // 色は直後の手段に合わせる(その空白はこれから始まる移動の一部として読める)
-    bySpan[i] = { category: cur.category, coords: [[a.lng, a.lat], [b.lng, b.lat]] };
+    const angle = centralAngle(a, b);
+    bySpan[i] = {
+      category: cur.category,
+      from: { lat: a.lat, lng: a.lng },
+      to: { lat: b.lat, lng: b.lng },
+      angle,
+      coords: greatCircle(a, b, angle),
+    };
   }
   return bySpan;
 }
@@ -2395,7 +2456,8 @@ function traveledGapsGeoJSON(t) {
       properties: { category: gap.category },
       geometry: {
         type: "LineString",
-        coordinates: done ? gap.coords : [gap.coords[0], headPosition(t)],
+        coordinates: done ? gap.coords
+          : greatCircle(gap.from, gap.to, gap.angle, gapProgress(t)),
       },
     });
   });
@@ -2429,10 +2491,35 @@ function setPlaybackView(on) {
   map.setPaintProperty("head-circle", "circle-stroke-opacity", on ? 1 : 0);
 }
 
-function boundsOf(tracks) {
-  const b = new maplibregl.LngLatBounds();
-  for (const t of tracks) for (const p of t.points) b.extend([p.lng, p.lat]);
-  return b.isEmpty() ? null : b;
+/**
+ * 経路と、つないだ空白を囲む矩形。
+ *
+ * 空白の大圏航路は前後の経路の外側へ膨らむので、折れ線ごと含める。含めないと
+ * 弧の頂点が画面の外へ出る。経度は時系列で連続させてから足す。太平洋を渡る旅を
+ * 素直に囲むと、東経と西経の間、つまりユーラシアを横切る矩形になってしまい、
+ * 地図が地球の裏側を向く。
+ */
+function boundsOf(tracks, gaps) {
+  const points = [];
+  for (let i = 0; i < tracks.length; i++) {
+    const gap = gaps && gaps[i];
+    if (gap) for (const c of gap.coords) points.push(c);
+    for (const p of tracks[i].points) points.push([p.lng, p.lat]);
+  }
+  if (!points.length) return null;
+
+  let lng = points[0][0];
+  let west = lng, east = lng, south = 90, north = -90;
+  for (const [x, y] of points) {
+    lng += (x - lng + 540) % 360 - 180; // 直前の点から ±180° を超えない側へ
+    if (lng < west) west = lng;
+    if (lng > east) east = lng;
+    if (y < south) south = y;
+    if (y > north) north = y;
+  }
+  // 地球を何周もする記録。連続させた幅では収まらないので、そのまま全周を返す
+  if (east - west > 360) { west = -180; east = 180; }
+  return new maplibregl.LngLatBounds([west, south], [east, north]);
 }
 
 /* ============================================================
@@ -2445,7 +2532,7 @@ const state = {
   minDay: null,
   maxDay: null,
   view: [],        // 絞り込み + 間引き済み
-  gaps: [],        // 経路番号ごとの、直前の経路との空白をつなぐ線
+  gaps: [],        // 経路番号ごとの、直前の経路との空白をつなぐ大圏航路
   segments: [],    // 読み込んだ元データ。書き出しのために保持する
   unknownTypes: [],// 表に無かった移動手段の型名 (書式違いに気づくため)
   edits: new Set(),// 移動手段を書き換えたセグメントの番号
@@ -2688,7 +2775,7 @@ function render() {
   map.getSource("head").setData(EMPTY);
   setPlaybackView(false);
 
-  const bounds = boundsOf(view);
+  const bounds = boundsOf(view, state.gaps);
   if (bounds) map.fitBounds(bounds, { padding: 60, duration: 600, maxZoom: 15 });
 
   // 統計 (距離は間引く前の selected から求める)
@@ -2887,9 +2974,22 @@ function headPosition(t) {
   if (!next || !(next.t > cur.t) || !(t > cur.t)) return [cur.lng, cur.lat];
   // 経路の中は記録どうしの間を、空白は始点と終点の間を、どちらも経過時間の
   // 比で進める(空白は開始から終了まで一定速度で移動したものとして扱う)。
-  if (state.spanOf[i] !== state.spanOf[i + 1] && crossingGapSpan() < 0) return [cur.lng, cur.lat];
+  const cross = crossingGapSpan();
+  if (state.spanOf[i] !== state.spanOf[i + 1] && cross < 0) return [cur.lng, cur.lat];
   const k = Math.min(1, (t - cur.t) / (next.t - cur.t));
+  // 空白の上では点線と同じ大圏航路をたどる。別の線の上を進んではいけない
+  if (cross >= 0) {
+    const gap = state.gaps[cross];
+    return gcPoint(gap.from, gap.to, gap.angle, k);
+  }
   return [cur.lng + (next.lng - cur.lng) * k, cur.lat + (next.lat - cur.lat) * k];
+}
+
+/** いま渡っている空白を、どこまで進んだか(0〜1) */
+function gapProgress(t) {
+  const a = state.flat, i = headIndex(), cur = a[i], next = a[i + 1];
+  if (!next || !(next.t > cur.t) || !(t > cur.t)) return 0;
+  return Math.min(1, (t - cur.t) / (next.t - cur.t));
 }
 
 /** 現在地が乗っている移動手段。空白の上では、その空白の手段を使う。 */
