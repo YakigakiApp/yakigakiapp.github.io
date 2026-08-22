@@ -3897,7 +3897,15 @@ function shareFileName(sum) {
   return `timeline-${from === to ? from : from + "_" + to}.png`;
 }
 
-async function shareMapImage() {
+/**
+ * 画像はファイルとして保存するだけにする。共有シートには渡さない。
+ *
+ * 描けた画像を見てから送りたいのに、シートが先に出ると、確かめる前に送り先を
+ * 選ばされる。閉じれば何も残らないので、確認するには押し直すことになる。
+ * 保存しておけば、いつでも開いて確かめられるし、送るのはそのあと端末のいつもの
+ * 手順でできる。
+ */
+async function saveMapImage() {
   if (!state.summary || shareBtn.classList.contains("busy")) return;
   shareBtn.classList.add("busy");
   shareBtn.disabled = true;
@@ -3910,18 +3918,6 @@ async function shareMapImage() {
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(t("share.blobFailed")))), "image/png");
     });
     const name = shareFileName(sum);
-    const file = new File([blob], name, { type: "image/png" });
-
-    // 共有シートがあるならそこへ渡す。写真に保存するのも送るのも選べる。
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file] });
-        return; // 保存も送信も共有シートの側で終わる
-      } catch (err) {
-        if (err && err.name === "AbortError") return; // 閉じただけ
-        // シートが開けなかったときは、そのままダウンロードへ落とす
-      }
-    }
     saveBlob(blob, name);
     setStatus(t("share.saved", { name }));
   } catch (err) {
@@ -3933,7 +3929,7 @@ async function shareMapImage() {
   }
 }
 
-shareBtn.addEventListener("click", shareMapImage);
+shareBtn.addEventListener("click", saveMapImage);
 
 /* ============================================================
  * Passage のバナー
