@@ -1957,16 +1957,15 @@ function parseTimeline(json) {
     for (const part of splitByActivity(p, overlapping, timed)) tracks.push(part);
   }
 
-  // どの経路とも重ならない activity だけを start→end の直線で補完する
+  // どの経路とも重ならない activity だけを、始点→終点の大圏航路で補完する
   timed.forEach((a, i) => {
     if (usedActivity.has(i) || !a.s || !a.e) return;
     tracks.push({
       start: a.start, end: a.end, type: a.type, category: categoryOf(a.type),
       seg: a.seg, straight: true,
-      points: [
-        { lat: a.s[0], lng: a.s[1], t: a.start },
-        { lat: a.e[0], lng: a.e[1], t: a.end },
-      ],
+      points: straightPoints(
+        { lat: a.s[0], lng: a.s[1] }, { lat: a.e[0], lng: a.e[1] }, a.start, a.end
+      ),
     });
   });
 
@@ -1976,6 +1975,11 @@ function parseTimeline(json) {
     (t) => isFinite(t.start) && isFinite(t.end) && t.start > 0 && t.end >= t.start
   );
   skipped += tracks.length - valid.length;
+
+  // 日付変更線をまたぐ経路は、+179° から -179° へ折り返した所で地図を真横に
+  // 横切る線になる。2° 動いただけなのに、地球を逆回りして戻る線が引かれる。
+  // またいだ先は 181° のように 180° の外へ続けて、1 本の線として繋げておく。
+  for (const t of valid) t.points = unwrapLngs(t.points);
 
   valid.sort((a, b) => a.start - b.start);
   visits.sort((a, b) => a.start - b.start);
@@ -2096,6 +2100,9 @@ function filterTracks(tracks, dayIndex, fromMs, toMs) {
 
 const EARTH_R = 6371000; // 地球の半径(m)
 
+/** 角度の差を -180°〜180° に畳む。日付変更線をまたぐ計算はすべてここを通す */
+const wrap180 = (deg) => ((deg % 360) + 540) % 360 - 180;
+
 /** 2 点を結ぶ大円の中心角(ラジアン) */
 function centralAngle(a, b) {
   const rad = Math.PI / 180;
@@ -2138,7 +2145,7 @@ function gcPoint(a, b, angle, f) {
   const z = A * Math.sin(la1) + B * Math.sin(la2);
   const lat = Math.atan2(z, Math.hypot(x, y)) * deg;
   const lng = Math.atan2(y, x) * deg;
-  return [a.lng + ((lng - a.lng + 540) % 360 - 180), lat];
+  return [a.lng + wrap180(lng - a.lng), lat];
 }
 
 /** 大圏航路の折れ線。f を渡すと、始点からその割合までの部分だけを返す */
@@ -2154,6 +2161,34 @@ function greatCircle(a, b, angle, f = 1) {
   }
   coords.push(gcPoint(a, b, angle, end));
   return coords;
+}
+
+/**
+ * 経路の経度を連続させる。日付変更線をまたぐ所で ±360° を足し、隣り合う点が
+ * 180° 以上離れないようにする。またいだ先の経度は 180° の外に出るが、地図は
+ * その先も同じ場所として描くので、線は途切れず正しい側を通る。
+ */
+function unwrapLngs(points) {
+  if (!points.length) return points;
+  let prev = points[0].lng;
+  return points.map((p, i) => {
+    if (i === 0) return p;
+    // 前の点から ±180° を超えない側へ、360° の倍数だけずらす
+    const turns = Math.round((prev + wrap180(p.lng - prev) - p.lng) / 360);
+    prev = p.lng + turns * 360;
+    return turns ? { ...p, lng: prev } : p;
+  });
+}
+
+/**
+ * 始点と終点しか無い activity を、点の並びに開く。長い区間は大圏航路に沿って
+ * 刻む。地図の上の直線は、大洋を渡るような区間では実際の経路から大きく離れる
+ * ため。時刻は道のりの割合で振る(一定の速さで移動したものとして扱う)。
+ */
+function straightPoints(from, to, start, end) {
+  const coords = greatCircle(from, to, centralAngle(from, to));
+  const last = coords.length - 1;
+  return coords.map(([lng, lat], i) => ({ lat, lng, t: start + (end - start) * (i / last) }));
 }
 
 /** 度単位の二乗距離。間引き判定にしか使わないので厳密でなくてよい */
@@ -2469,8 +2504,8 @@ function tracksToGeoJSON(tracks, iterations) {
     type: "FeatureCollection",
     features: tracks.map((t) => {
       let coords = t.points.map((p) => [p.lng, p.lat]);
-      // 2点しかない直線は activity から補完したもので、実際の経路ではない。
-      // なめらか化しても意味が無いのでそのまま描く。
+      // straight は activity から補完した大圏航路で、実際の経路ではない。
+      // 既になめらかなので、そのまま描く。
       if (iterations && !t.straight) coords = chaikin(coords, iterations);
       return {
         type: "Feature",
@@ -2511,7 +2546,7 @@ function boundsOf(tracks, gaps) {
   let lng = points[0][0];
   let west = lng, east = lng, south = 90, north = -90;
   for (const [x, y] of points) {
-    lng += (x - lng + 540) % 360 - 180; // 直前の点から ±180° を超えない側へ
+    lng += wrap180(x - lng); // 直前の点から ±180° を超えない側へ
     if (lng < west) west = lng;
     if (lng > east) east = lng;
     if (y < south) south = y;
