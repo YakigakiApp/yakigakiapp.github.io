@@ -3898,12 +3898,26 @@ function shareFileName(sum) {
 }
 
 /**
- * 画像はファイルとして保存するだけにする。共有シートには渡さない。
+ * 端末の見分け。iPadOS 13 以降は Macintosh を名乗るので、UA だけでは Mac と
+ * 区別がつかない。タッチできる Mac は無いので、その有無で見分ける。
+ */
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+               (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+const IS_ANDROID = /Android/.test(navigator.userAgent);
+
+/**
+ * 画像の渡し方を端末で分ける。
  *
- * 描けた画像を見てから送りたいのに、シートが先に出ると、確かめる前に送り先を
- * 選ばされる。閉じれば何も残らないので、確認するには押し直すことになる。
- * 保存しておけば、いつでも開いて確かめられるし、送るのはそのあと端末のいつもの
- * 手順でできる。
+ * PC ではファイルとして保存する。共有シートが先に出ると、描けた画像を見る前に
+ * 送り先を選ばされ、閉じれば何も残らない。保存しておけば、開いて確かめてから
+ * いつもの手順で送れる。
+ *
+ * スマートフォンでは共有シートに渡す。iPhone はここを通らないと写真に入らず、
+ * 「ファイル」に落ちた画像を写真へ移すのは手間が多い。シートの「画像を保存」で
+ * 写真に入れておけば、あとから写真アプリで確かめられる。Android も同じ。
+ *
+ * 分け方は画面ではなく端末で決める。タッチできる PC は指で操作していても
+ * 保存の方が合っており、逆にマウスを繋いだスマートフォンでも写真は写真のまま。
  */
 async function saveMapImage() {
   if (!state.summary || shareBtn.classList.contains("busy")) return;
@@ -3918,6 +3932,20 @@ async function saveMapImage() {
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(t("share.blobFailed")))), "image/png");
     });
     const name = shareFileName(sum);
+
+    if ((IS_IOS || IS_ANDROID) && navigator.canShare) {
+      const file = new File([blob], name, { type: "image/png" });
+      if (navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file] });
+          return; // 写真への保存も送信も、シートの側で終わる
+        } catch (err) {
+          if (err && err.name === "AbortError") return; // 閉じただけ
+          // シートが開けなかったときは、そのまま保存へ落とす
+        }
+      }
+    }
+
     saveBlob(blob, name);
     setStatus(t("share.saved", { name }));
   } catch (err) {
@@ -3937,18 +3965,11 @@ shareBtn.addEventListener("click", saveMapImage);
 
 // 端末に合った行き先へ送る。PC には配布ページを見せる。
 (() => {
-  const ua = navigator.userAgent;
-  // iPadOS 13 以降は Macintosh を名乗るので、UA だけでは Mac と区別が
-  // つかない。タッチできる Mac は無いので、その有無で見分ける。
-  const isIOS = /iPhone|iPad|iPod/.test(ua) ||
-                (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
-  const isAndroid = /Android/.test(ua);
-
   // どちらも流入元がストア側で見えるよう、計測用のパラメータ付き
-  if (isIOS) {
+  if (IS_IOS) {
     $("promo").href = "https://apps.apple.com/app/apple-store/id6761323054" +
                       "?pt=128709782&ct=timeline-visualizer&mt=8";
-  } else if (isAndroid) {
+  } else if (IS_ANDROID) {
     $("promo").href = "https://play.google.com/store/apps/details?id=com.flightphoto.passage" +
                       "&referrer=utm_source%3Dpath-biz.com%26utm_campaign%3Dtimeline-visualizer";
   }
