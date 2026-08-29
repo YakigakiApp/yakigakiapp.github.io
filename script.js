@@ -128,8 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
             btnJa.classList.remove('active');
             
             if (isLegalPage) {
-                document.title = "Passage - Legal Notice";
-                if (metaDesc) metaDesc.content = "Legal notice for Passage under the Japanese Act on Specified Commercial Transactions and the EU Digital Services Act.";
+                document.title = "PATH - Legal Information";
+                if (metaDesc) metaDesc.content = "Legal and trader information for apps provided by PATH.";
             } else {
                 document.title = "Passage - Your journey, captured beautifully.";
                 if (metaDesc) metaDesc.content = "Passage beautifully overlays flight info and routes onto your travel photos. Captures altitude, speed, and your path through the sky.";
@@ -144,8 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
             btnEn.classList.remove('active');
             
             if (isLegalPage) {
-                document.title = "Passage - 特定商取引法に基づく表記 / DSA対応表示";
-                if (metaDesc) metaDesc.content = "Passageの特定商取引法に基づく表記およびEU DSA対応に関する法的表示です。";
+                document.title = "PATH - 特定商取引法に基づく表記 / Legal Information";
+                if (metaDesc) metaDesc.content = "PATHが提供するアプリに関する特定商取引法に基づく表記およびEU/EEA向け事業者情報です。";
             } else {
                 document.title = "Passage - 旅の軌跡を、美しい一枚に。";
                 if (metaDesc) metaDesc.content = "Passageは、フライトや列車の移動情報を写真に美しくオーバーレイするiOSアプリです。出発/到着地、ルートマップを自動で写真に刻みます。";
