@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-        <loc>https://yakigakiapp.github.io/</loc>
+        <loc>https://path-biz.com/</loc>
     </url>
     <url>
-        <loc>https://yakigakiapp.github.io/timeline-visualizer/</loc>
+        <loc>https://path-biz.com/timeline-visualizer/</loc>
+    </url>
+    <url>
+        <loc>https://path-biz.com/ratiofit/privacy/</loc>
     </url>
 </urlset>
