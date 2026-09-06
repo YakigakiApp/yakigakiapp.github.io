@@ -3,9 +3,19 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="/path/flight-transition.css" />
+<script src="../path/flight-transition.js"></script>
 <title>Timeline Visualizer — Google マップのタイムラインを地図で描く</title>
 <meta name="description" content="Google マップからエクスポートしたタイムライン JSON を、移動手段ごとに色分けした地図と再生アニメーションで振り返るツール。選んだファイルの中身は端末の中だけで処理され、外部に送信されません。" />
 <meta name="theme-color" content="#fbfaf8" />
+<link rel="canonical" href="https://path-biz.com/timeline-visualizer/" />
+<link rel="alternate" hreflang="ja" href="https://path-biz.com/timeline-visualizer/?lang=ja" />
+<link rel="alternate" hreflang="en" href="https://path-biz.com/timeline-visualizer/?lang=en" />
+<link rel="alternate" hreflang="ko" href="https://path-biz.com/timeline-visualizer/?lang=ko" />
+<link rel="alternate" hreflang="zh-Hans" href="https://path-biz.com/timeline-visualizer/?lang=zh-Hans" />
+<link rel="alternate" hreflang="zh-Hant" href="https://path-biz.com/timeline-visualizer/?lang=zh-Hant" />
+<link rel="alternate" hreflang="x-default" href="https://path-biz.com/timeline-visualizer/" />
+<meta property="og:url" content="https://path-biz.com/timeline-visualizer/" />
 <meta property="og:type" content="website" />
 <meta property="og:title" content="Timeline Visualizer" />
 <meta property="og:description" content="Google マップのタイムラインを、移動手段ごとに色分けした地図で振り返る。選んだファイルの中身は端末の外に出ません。" />
@@ -499,6 +509,7 @@
   body.resizing { user-select: none; -webkit-user-select: none; }
   body.resizing #map { pointer-events: none; }
 </style>
+<link rel="stylesheet" href="/policy-navigation.css">
 </head>
 <body>
 
@@ -675,8 +686,9 @@
   </section>
 
   <footer>
+    <a href="/">PATH</a>
     <a href="https://sites.google.com/view/passage-app-privacypolicy" target="_blank" rel="noopener" data-i18n="footer.privacy">プライバシーポリシー</a>
-  </footer>
+  <nav class="policy-links" aria-label="Privacy and legal"><a href="/privacy/">プライバシー情報 / Privacy</a><a href="/legal/">特定商取引法に基づく表記 / Legal</a></nav></footer>
 </div>
 
 <div id="map-wrap">

@@ -1,0 +1,21 @@
+/* Only a same-tab arrival from PATH enables this veil. Direct visits are unchanged. */
+html.path-flight-arriving::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 2147483646;
+    background: #eef3f6;
+    opacity: 1;
+    pointer-events: none;
+    transition: opacity 750ms cubic-bezier(.22, 1, .36, 1);
+}
+
+html.path-flight-arriving.path-flight-landed::before {
+    opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.path-flight-arriving::before {
+        display: none;
+    }
+}

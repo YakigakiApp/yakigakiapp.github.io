@@ -1,173 +1,167 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Decrypt secure emails to protect against crawlers
-    document.querySelectorAll('.secure-email').forEach(el => {
-        const u = atob(el.getAttribute('data-u'));
-        const d = atob(el.getAttribute('data-d'));
-        const email = `${u}@${d}`;
-        el.innerHTML = `<a href="mailto:${email}">${email}</a>`;
-    });
-
-    // Reveal animations on scroll
-    const observerOptions = {
-        threshold: 0.1
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('revealed');
-                observer.unobserve(entry.target);
-            }
-        });
-    }, observerOptions);
-
-    // Start observing elements
-    const revealElements = document.querySelectorAll('.feature-card, .section-title, .hero-text, .hero-image, .plus-card, .tool-card');
-    revealElements.forEach(el => observer.observe(el));
-
-    // Render SNS posts lazily when the #sns section scrolls into view
-    const snsSection = document.getElementById('sns');
-    if (snsSection) {
-        const snsObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    renderSocialPosts();
-                    snsObserver.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.1 });
-        snsObserver.observe(snsSection);
-    }
-
-    // Track scroll for header glass effect
-    const header = document.querySelector('header');
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > 20) {
-            header.classList.add('scrolled');
-        } else {
-            header.classList.remove('scrolled');
-        }
-    });
-
-    // Simple smooth scroll for anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const targetId = this.getAttribute('href');
-            if (targetId === '#') return;
-            
-            const targetElement = document.querySelector(targetId);
-            if (targetElement) {
-                window.scrollTo({
-                    top: targetElement.offsetTop - 80,
-                    behavior: 'smooth'
-                });
-            }
-        });
-    });
-
-    // Language Switcher Logic
-    const btnJa = document.getElementById('btn-ja');
-    const btnEn = document.getElementById('btn-en');
     const body = document.body;
-
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const buttons = { ja: document.getElementById('btn-ja'), en: document.getElementById('btn-en') };
     let currentLang = 'ja';
 
-    /**
-     * 画像を今の言語のものにする。
-     *
-     * data-defer が残っているものは、まだ画面に入っていない (下の
-     * deferredObserver 参照) ので触らない。ここで src を入れてしまうと、
-     * 見てもいない画像を言語の数だけ落とすことになる。
-     * 既に同じ画像を指しているときに代入し直さないのは、それだけで
-     * ブラウザが読み込みをやり直すため。
-     */
+    // This script is shared with the legal page.
+    document.querySelectorAll('.secure-email').forEach((element) => {
+        try {
+            const email = atob(element.dataset.u) + '@' + atob(element.dataset.d);
+            const link = document.createElement('a');
+            link.href = 'mailto:' + email;
+            link.textContent = email;
+            element.replaceChildren(link);
+        } catch (_) { /* The readable fallback remains if an address is malformed. */ }
+    });
+
     function showImage(img, lang) {
         if (img.hasAttribute('data-defer')) return;
-        const pick = el => (lang === 'en' ? el.dataset.en : el.dataset.ja);
+        const pick = (element) => lang === 'en' ? element.dataset.en : element.dataset.ja;
         const picture = img.parentElement;
         if (picture && picture.tagName === 'PICTURE') {
-            // <source> を先に入れる。あとにすると img の方が先に選ばれて、
-            // JPEG を落としてから WebP に差し替える二度手間になる。
-            picture.querySelectorAll('source[data-ja]').forEach(source => {
+            picture.querySelectorAll('source[data-ja]').forEach((source) => {
                 const url = pick(source);
                 if (url && source.getAttribute('srcset') !== url) source.srcset = url;
             });
         }
         const src = pick(img);
         if (src && img.getAttribute('src') !== src) img.src = src;
+        const alt = lang === 'en' ? img.dataset.altEn : img.dataset.altJa;
+        if (alt) img.alt = alt;
     }
 
-    /**
-     * ギャラリーの画像は、画面に入る手前になるまで src を入れない。
-     *
-     * loading="lazy" だけに任せると、回線が速いと判断されたときに数千 px 先まで
-     * 先読みされる。ギャラリーは 3,000 px ほど下にあり、実測では 7 枚とも最初の
-     * 表示で落ちてきていた。自前で持てば、見た分だけで済む。
-     */
-    const deferredObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (!entry.isIntersecting) return;
-            deferredObserver.unobserve(entry.target);
-            entry.target.removeAttribute('data-defer');
-            showImage(entry.target, currentLang);
+    const gallery = document.querySelector('.gallery-scroll');
+    const galleryButtons = Array.from(document.querySelectorAll('[data-gallery-step]'));
+    function updateGallery() {
+        if (!gallery) return;
+        const maximum = Math.max(0, gallery.scrollWidth - gallery.clientWidth);
+        galleryButtons.forEach((button) => {
+            const backwards = Number(button.dataset.galleryStep) < 0;
+            button.disabled = backwards ? gallery.scrollLeft <= 2 : gallery.scrollLeft >= maximum - 2;
+            button.setAttribute('aria-label', currentLang === 'ja'
+                ? (backwards ? '前のスクリーンショット' : '次のスクリーンショット')
+                : (backwards ? 'Previous screenshots' : 'Next screenshots'));
         });
-    }, { rootMargin: '400px' });
-    document.querySelectorAll('img[data-defer]').forEach(img => deferredObserver.observe(img));
+        gallery.setAttribute('aria-label', currentLang === 'ja' ? 'Passageのスクリーンショット' : 'Passage screenshots');
+    }
+    galleryButtons.forEach((button) => button.addEventListener('click', () => {
+        if (!gallery) return;
+        gallery.scrollBy({ left: Number(button.dataset.galleryStep) * gallery.clientWidth * 0.85, behavior: motion.matches ? 'auto' : 'smooth' });
+    }));
+    if (gallery) {
+        gallery.addEventListener('scroll', updateGallery, { passive: true });
+        window.addEventListener('resize', updateGallery, { passive: true });
+        gallery.querySelectorAll('img').forEach((img) => img.addEventListener('load', updateGallery));
+    }
 
-    function setLanguage(lang) {
-        currentLang = lang === 'en' ? 'en' : 'ja';
-        const metaDesc = document.querySelector('meta[name="description"]');
-        const langImages = document.querySelectorAll('.lang-img');
-        const isLegalPage = window.location.pathname.includes('legal.html');
-
-        if (lang === 'en') {
-            body.classList.remove('lang-ja');
-            body.classList.add('lang-en');
-            btnEn.classList.add('active');
-            btnJa.classList.remove('active');
-            
-            if (isLegalPage) {
-                document.title = "PATH - Legal Information";
-                if (metaDesc) metaDesc.content = "Legal and trader information for apps provided by PATH.";
-            } else {
-                document.title = "Passage - Your journey, captured beautifully.";
-                if (metaDesc) metaDesc.content = "Passage beautifully overlays flight info and routes onto your travel photos. Captures altitude, speed, and your path through the sky.";
-            }
-            
-            // Swap to English images
-            langImages.forEach(img => showImage(img, 'en'));
-        } else {
-            body.classList.remove('lang-en');
-            body.classList.add('lang-ja');
-            btnJa.classList.add('active');
-            btnEn.classList.remove('active');
-            
-            if (isLegalPage) {
-                document.title = "PATH - 特定商取引法に基づく表記 / Legal Information";
-                if (metaDesc) metaDesc.content = "PATHが提供するアプリに関する特定商取引法に基づく表記およびEU/EEA向け事業者情報です。";
-            } else {
-                document.title = "Passage - 旅の軌跡を、美しい一枚に。";
-                if (metaDesc) metaDesc.content = "Passageは、フライトや列車の移動情報を写真に美しくオーバーレイするiOSアプリです。出発/到着地、ルートマップを自動で写真に刻みます。";
-            }
-
-            // Swap to Japanese images
-            langImages.forEach(img => showImage(img, 'ja'));
+    function setLanguage(value, updateUrl = false) {
+        currentLang = value === 'en' ? 'en' : 'ja';
+        const english = currentLang === 'en';
+        body.classList.toggle('lang-en', english);
+        body.classList.toggle('lang-ja', !english);
+        document.documentElement.lang = currentLang;
+        Object.entries(buttons).forEach(([lang, button]) => {
+            if (!button) return;
+            button.classList.toggle('active', lang === currentLang);
+            button.setAttribute('aria-pressed', String(lang === currentLang));
+        });
+        const legal = /^\/legal(?:\/|\.html$)/.test(window.location.pathname);
+        const title = legal
+            ? (english ? 'PATH - Legal Information' : 'PATH - 特定商取引法に基づく表記 / Legal Information')
+            : (english ? 'Passage | A journey worth keeping.' : 'Passage｜旅の軌跡を美しい一枚に。');
+        const description = legal
+            ? (english ? 'Legal and trader information for apps provided by PATH.' : 'PATHが提供するアプリに関する特定商取引法に基づく表記およびEU/EEA向け事業者情報です。')
+            : (english ? 'Add flight details and train routes to your travel photos. Passage turns photo location data into a journey worth keeping, on iOS and Android.' : 'フライトや列車のルートを旅の写真に。Passageは写真の位置情報から移動の軌跡を描くiOS・Androidアプリです。');
+        document.title = title;
+        const metadata = { 'meta[name="description"]': description, 'meta[property="og:title"]': title, 'meta[property="og:description"]': description, 'meta[name="twitter:title"]': title, 'meta[name="twitter:description"]': description, 'meta[property="og:locale"]': english ? 'en_US' : 'ja_JP', 'meta[property="og:locale:alternate"]': english ? 'ja_JP' : 'en_US' };
+        Object.entries(metadata).forEach(([selector, content]) => {
+            const meta = document.querySelector(selector);
+            if (meta) meta.content = content;
+        });
+        document.querySelectorAll('.lang-img').forEach((img) => showImage(img, currentLang));
+        const routes = { hub: english ? '/?lang=en' : '/?lang=ja', timeline: english ? '/timeline-visualizer/?lang=en' : '/timeline-visualizer/?lang=ja', ratiofit: english ? '/ratiofit/en/' : '/ratiofit/', legal: english ? '/legal/?lang=en' : '/legal/?lang=ja' };
+        document.querySelectorAll('[data-lang-link]').forEach((link) => {
+            if (routes[link.dataset.langLink]) link.setAttribute('href', routes[link.dataset.langLink]);
+        });
+        try { localStorage.setItem('preferred-lang', currentLang); } catch (_) { /* The page does not require browser storage. */ }
+        if (updateUrl) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('lang', currentLang);
+            history.replaceState(history.state, '', url);
         }
-        localStorage.setItem('preferred-lang', lang);
+        updateGallery();
     }
-
-    if (btnJa && btnEn) {
-        btnJa.addEventListener('click', () => setLanguage('ja'));
-        btnEn.addEventListener('click', () => setLanguage('en'));
-    }
-
-    // Load preferred language (?lang= in URL takes priority over saved preference / browser language)
+    buttons.ja?.addEventListener('click', () => setLanguage('ja', true));
+    buttons.en?.addEventListener('click', () => setLanguage('en', true));
+    let savedLang;
+    try { savedLang = localStorage.getItem('preferred-lang'); } catch (_) { /* Fall back to the browser language. */ }
     const urlLang = new URLSearchParams(window.location.search).get('lang');
-    const savedLang = (urlLang === 'ja' || urlLang === 'en')
-        ? urlLang
-        : (localStorage.getItem('preferred-lang') || (navigator.language.startsWith('ja') ? 'ja' : 'en'));
-    setLanguage(savedLang);
+    const initialLang = ['ja', 'en'].includes(urlLang) ? urlLang : ['ja', 'en'].includes(savedLang) ? savedLang : navigator.language.startsWith('ja') ? 'ja' : 'en';
+    setLanguage(initialLang);
+    window.addEventListener('popstate', () => {
+        const lang = new URLSearchParams(window.location.search).get('lang');
+        setLanguage(['ja', 'en'].includes(lang) ? lang : currentLang);
+    });
+
+    // Native lazy loading also keeps the gallery available without JavaScript.
+    // Older markup using data-defer continues to work with this shared script.
+    const deferredImages = document.querySelectorAll('img[data-defer]');
+    const activateImage = (img) => {
+        img.removeAttribute('data-defer');
+        showImage(img, currentLang);
+    };
+    if ('IntersectionObserver' in window) {
+        const deferredObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                deferredObserver.unobserve(entry.target);
+                activateImage(entry.target);
+            });
+        }, { rootMargin: '400px' });
+        deferredImages.forEach((img) => deferredObserver.observe(img));
+    } else deferredImages.forEach(activateImage);
+
+    let revealObserver;
+    const revealElements = document.querySelectorAll('.feature-card, .plus-card, .tool-card');
+    function setupReveals() {
+        revealObserver?.disconnect();
+        revealElements.forEach((element) => {
+            element.classList.remove('will-reveal');
+            element.classList.add('revealed');
+        });
+        if (motion.matches || !('IntersectionObserver' in window)) return;
+        revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                entry.target.classList.add('revealed');
+                revealObserver.unobserve(entry.target);
+            });
+        }, { threshold: 0.1 });
+        revealElements.forEach((element) => {
+            if (element.getBoundingClientRect().top <= window.innerHeight) return;
+            element.classList.add('will-reveal');
+            element.classList.remove('revealed');
+            revealObserver.observe(element);
+        });
+    }
+    revealElements.forEach((element) => element.addEventListener('focusin', () => element.classList.add('revealed')));
+    setupReveals();
+    if (motion.addEventListener) motion.addEventListener('change', setupReveals);
+    else motion.addListener(setupReveals);
+
+    const snsSection = document.getElementById('sns');
+    if (snsSection) {
+        if ('IntersectionObserver' in window) {
+            const snsObserver = new IntersectionObserver((entries) => {
+                if (!entries.some((entry) => entry.isIntersecting)) return;
+                snsObserver.disconnect();
+                renderSocialPosts();
+            }, { rootMargin: '200px', threshold: 0.05 });
+            snsObserver.observe(snsSection);
+        } else renderSocialPosts();
+    }
+    if (document.fonts) document.fonts.ready.then(updateGallery);
 });
 
 // How many SNS posts to show before requiring a "show more" click.

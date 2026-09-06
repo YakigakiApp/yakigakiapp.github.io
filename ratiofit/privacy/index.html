@@ -14,13 +14,14 @@
     <meta property="og:title" content="RatioFit Privacy Policy">
     <meta property="og:description" content="Privacy Policy for the RatioFit Android app provided by PATH.">
     <meta property="og:url" content="https://path-biz.com/ratiofit/privacy/">
-    <link rel="stylesheet" href="../../style.css">
+    <link rel="stylesheet" href="../../style.css?v=20260906-matte">
     <link rel="stylesheet" href="privacy.css">
+<link rel="stylesheet" href="/policy-navigation.css">
 </head>
 <body class="lang-en privacy-page">
     <header>
         <nav class="container">
-            <a class="privacy-brand" href="/" aria-label="PATH home">
+            <a class="privacy-brand" href="/ratiofit/" aria-label="RatioFit home">
                 <span class="privacy-mark" aria-hidden="true">R</span>
                 <span>RatioFit</span>
             </a>
@@ -41,8 +42,8 @@
                     <span class="lang-ja">プライバシーポリシー</span>
                 </h1>
                 <p class="privacy-updated">
-                    <span class="lang-en">Effective date: August 29, 2026</span>
-                    <span class="lang-ja">制定日：2026年8月29日</span>
+                    <span class="lang-en">Effective date: September 4, 2026</span>
+                    <span class="lang-ja">改定日：2026年9月4日</span>
                 </p>
             </div>
 
@@ -55,6 +56,7 @@
                 <section>
                     <h2>2. Photos and videos</h2>
                     <p>The App lets you select, edit, and export photos and videos stored on your device. Selected media is processed locally on your device. We do not upload your photos or videos to a server operated by us.</p>
+                    <p>The contents and file names of photos and videos, editing details, and data stored in the App's library remain on your device unless you choose to export or share them. We cannot view or obtain this data through Firebase Analytics.</p>
                     <p>Exported files are saved to your device, or shared only when you choose a destination using Android's sharing features.</p>
                 </section>
 
@@ -65,12 +67,29 @@
                         <li>App language, appearance, and editing preferences</li>
                         <li>Information indicating whether the one-time ad-removal purchase has been completed</li>
                         <li>Temporary files required to edit and export media</li>
+                        <li>The Google Play installation timestamp used to remember that campaign attribution for that installation has been processed</li>
                     </ul>
                     <p>You can remove local App information by clearing the App's storage or uninstalling the App. Exported media must be deleted separately using your device's gallery or file-management app.</p>
                 </section>
 
                 <section>
-                    <h2>4. Advertising and consent</h2>
+                    <h2>4. Usage analytics</h2>
+                    <p>The App uses Google Analytics for Firebase, provided by Google LLC, to understand how the App is used and to improve its quality. It may automatically process:</p>
+                    <ul>
+                        <li>Screens viewed, sessions, and aggregate event results for media import, export, saving to the device gallery, and opening the system share sheet</li>
+                        <li>App installation information, App version, device model, operating system, and language</li>
+                        <li>Approximate location derived from IP address</li>
+                        <li>Diagnostic and performance information</li>
+                        <li>Identifiers generated for an App installation</li>
+                        <li>For the supported cross-promotion from Passage, a fixed campaign-attribution event described below</li>
+                    </ul>
+                    <p>Media-related aggregate events contain only the media category (image or video), the import source (gallery or share), and a fixed result such as success, cancellation, or failure, as applicable. Opening the system share sheet is counted, but the destination and whether the recipient completed the share are not collected.</p>
+                    <p>On Android, the App uses the Google Play Install Referrer API to determine whether an installation came from the supported promotion in Passage. When the referrer identifies that promotion, the App sends a one-time <code>first_open_from_passage</code> event containing only these fixed labels: source <code>passage</code>, medium <code>in_app_cross_promo</code>, campaign <code>save_success_sheet</code>, and creative <code>split_banner_v1</code>. The raw install-referrer string, click and installation timestamps, and any other referrer parameters are not sent to Firebase Analytics. Organic installs and other campaigns do not generate this event.</p>
+                    <p>Firebase Analytics receives the usage statistics described above, but it does not receive the contents or file names of photos and videos, file paths, editing details or values, share destinations, user-entered information, error messages or encoder logs, data stored in the App's library, or language, appearance, and editing preferences stored on your device. This internal App data remains on your device, and we cannot view or obtain it through Firebase Analytics. For more information, see <a href="https://firebase.google.com/support/privacy" rel="noopener">Privacy and Security in Firebase</a> and <a href="https://policies.google.com/privacy" rel="noopener">Google's Privacy Policy</a>.</p>
+                </section>
+
+                <section>
+                    <h2>5. Advertising and consent</h2>
                     <p>The free version of the App uses Google Mobile Ads, provided by Google LLC, to display banner and interstitial advertisements. Google Mobile Ads may process:</p>
                     <ul>
                         <li>IP address and approximate location derived from it</li>
@@ -84,33 +103,33 @@
                 </section>
 
                 <section>
-                    <h2>5. In-app purchases</h2>
+                    <h2>6. In-app purchases</h2>
                     <p>The App offers a one-time purchase that removes advertisements. Purchases are processed by Google Play. We do not receive or store credit card numbers or other payment credentials. The App receives only the product and purchase-status information needed to provide and restore the purchased feature.</p>
                 </section>
 
                 <section>
-                    <h2>6. Fonts and network access</h2>
+                    <h2>7. Fonts and network access</h2>
                     <p>The App may download font files from Google Fonts when a font is first required and cache them on your device for later use. When connecting to Google's servers, technical information such as your IP address and request information may be processed by Google.</p>
                 </section>
 
                 <section>
-                    <h2>7. Third-party services</h2>
-                    <p>The App uses Google Mobile Ads, Google User Messaging Platform, Google Play Billing, and Google Fonts. These services may process information in countries other than your country of residence. Their processing is governed by their respective terms, privacy policies, and applicable laws.</p>
+                    <h2>8. Third-party services</h2>
+                    <p>The App uses Google Analytics for Firebase, the Google Play Install Referrer API, Google Mobile Ads, Google User Messaging Platform, Google Play Billing, and Google Fonts. These services may process information in countries other than your country of residence. Their processing is governed by their respective terms, privacy policies, and applicable laws.</p>
                 </section>
 
                 <section>
-                    <h2>8. Children</h2>
+                    <h2>9. Children</h2>
                     <p>The App is not designed for or directed to children under 13. We do not knowingly collect personal information directly from children. Additional local age or parental-consent requirements may apply in some countries or regions.</p>
                 </section>
 
                 <section>
-                    <h2>9. Security and retention</h2>
+                    <h2>10. Security and retention</h2>
                     <p>We take reasonable measures to protect information handled by the App. However, no electronic storage or transmission method can be guaranteed to be completely secure.</p>
                     <p>Media processed locally remains on your device until you delete it. Information processed by third-party services is retained according to their respective policies.</p>
                 </section>
 
                 <section>
-                    <h2>10. Your choices and rights</h2>
+                    <h2>11. Your choices and rights</h2>
                     <p>Depending on your region, you may have rights relating to access, correction, deletion, restriction, objection, or withdrawal of consent. You can:</p>
                     <ul>
                         <li>Change advertising choices through <strong>Ad Privacy Settings</strong> when that option is displayed</li>
@@ -122,12 +141,12 @@
                 </section>
 
                 <section>
-                    <h2>11. Changes to this policy</h2>
+                    <h2>12. Changes to this policy</h2>
                     <p>We may update this Privacy Policy when the App's features, services, or legal requirements change. We will publish the updated policy on this page and revise the effective date.</p>
                 </section>
 
                 <section>
-                    <h2>12. Contact</h2>
+                    <h2>13. Contact</h2>
                     <p>Provider: PATH<br>Email: <span class="secure-email" data-name="cGFzc2FnZS1pbmZv" data-host="cGF0aC1iaXouY29t">loading…</span></p>
                     <noscript><p>Email: passage-info [at] path-biz [dot] com</p></noscript>
                 </section>
@@ -142,6 +161,7 @@
                 <section>
                     <h2>2. 写真および動画</h2>
                     <p>本アプリでは、端末内の写真または動画を選択し、編集および書き出しができます。選択された写真・動画の編集処理は端末内で行われ、当方が運営するサーバーへアップロードされません。</p>
+                    <p>写真・動画の内容やファイル名、編集内容および本アプリのライブラリ内に保存されたデータは、利用者が書き出しまたは共有を選択しない限り、端末内に留まります。当方は、Firebase Analyticsを通じてこれらのデータを閲覧または取得することはできません。</p>
                     <p>書き出したファイルは端末内に保存されるか、利用者がAndroidの共有機能で送信先を選択した場合に限り、その送信先へ共有されます。</p>
                 </section>
 
@@ -152,12 +172,29 @@
                         <li>言語、外観および編集に関する設定</li>
                         <li>広告削除商品の購入状態を示す情報</li>
                         <li>写真・動画の編集や書き出しに必要な一時ファイル</li>
+                        <li>そのインストールのキャンペーン判定が処理済みであることを記録するためのGoogle Play上のインストール時刻</li>
                     </ul>
                     <p>アプリ設定や一時情報は、Androidの設定から本アプリのストレージを消去するか、本アプリをアンインストールすることで削除できます。書き出し済みの写真・動画は、ギャラリーやファイル管理アプリから別途削除してください。</p>
                 </section>
 
                 <section>
-                    <h2>4. 広告および同意</h2>
+                    <h2>4. 利用状況の分析</h2>
+                    <p>本アプリは、利用状況を把握して品質を改善するため、Google LLCが提供するGoogle Analytics for Firebaseを利用します。これにより、次の情報が自動的に処理される場合があります。</p>
+                    <ul>
+                        <li>閲覧した画面、セッション、ならびに写真・動画の読み込み、書き出し、端末のギャラリーへの保存およびOS共有シート表示の成否等の集計イベント</li>
+                        <li>アプリのインストール情報、アプリのバージョン、端末モデル、OSおよび言語</li>
+                        <li>IPアドレスから推定されるおおよその位置</li>
+                        <li>診断情報およびパフォーマンス情報</li>
+                        <li>アプリのインストールごとに生成される識別子</li>
+                        <li>Passageからの対象クロスプロモーションについて、以下に記載する固定のキャンペーン判定イベント</li>
+                    </ul>
+                    <p>写真・動画に関する集計イベントに含まれるのは、写真・動画の種別、読み込み元（ギャラリーまたは共有）、および該当する場合の成功・キャンセル・失敗といった固定の結果のみです。OS共有シートを開いたことは集計しますが、共有先および相手への共有が完了したかどうかは収集しません。</p>
+                    <p>Android版では、Google Play Install Referrer APIを利用して、インストールがPassage内の対象プロモーション経由かどうかを判定します。対象プロモーションに一致した場合に限り、<code>first_open_from_passage</code>イベントを1回送信します。このイベントに含まれるのは、source <code>passage</code>、medium <code>in_app_cross_promo</code>、campaign <code>save_success_sheet</code>、creative <code>split_banner_v1</code>という固定値のみです。Install Referrerの生文字列、クリック時刻、インストール時刻、その他のリファラーパラメータはFirebase Analyticsへ送信しません。オーガニックインストールおよび他のキャンペーンでは、このイベントを送信しません。</p>
+                    <p>Firebase Analyticsには上記の利用統計が送信されますが、写真・動画の内容やファイル名、ファイルパス、編集内容・編集値、共有先、利用者が入力した情報、エラーメッセージ・エンコーダーログ、本アプリのライブラリ内データ、または端末内に保存された言語・外観・編集設定は送信されません。これらのアプリ内部データは端末内に留まり、当方がFirebase Analyticsを通じて閲覧または取得することはできません。詳しくは、<a href="https://firebase.google.com/support/privacy?hl=ja" rel="noopener">Firebaseのプライバシーとセキュリティ</a>および<a href="https://policies.google.com/privacy?hl=ja" rel="noopener">Googleプライバシーポリシー</a>をご確認ください。</p>
+                </section>
+
+                <section>
+                    <h2>5. 広告および同意</h2>
                     <p>本アプリの無料版では、Google LLCが提供するGoogle Mobile Adsを利用して、バナー広告および全画面広告を表示します。Google Mobile Adsは、次の情報を処理する場合があります。</p>
                     <ul>
                         <li>IPアドレスおよびIPアドレスから推定されるおおよその位置</li>
@@ -171,33 +208,33 @@
                 </section>
 
                 <section>
-                    <h2>5. アプリ内購入</h2>
+                    <h2>6. アプリ内購入</h2>
                     <p>本アプリでは、広告を削除するための1回限りの買い切り商品を提供します。購入処理はGoogle Playによって行われます。当方がクレジットカード番号などの決済情報を取得または保存することはありません。本アプリは、購入機能の提供および復元に必要な商品情報と購入状態のみを受け取ります。</p>
                 </section>
 
                 <section>
-                    <h2>6. フォントと通信</h2>
+                    <h2>7. フォントと通信</h2>
                     <p>本アプリは、フォントが初めて必要になった際にGoogle Fontsからフォントファイルをダウンロードし、以降の利用のため端末内にキャッシュする場合があります。Googleのサーバーへ接続する際、IPアドレスやリクエストに関する技術情報がGoogleによって処理される場合があります。</p>
                 </section>
 
                 <section>
-                    <h2>7. 外部サービス</h2>
-                    <p>本アプリは、Google Mobile Ads、Google User Messaging Platform、Google Play BillingおよびGoogle Fontsを利用します。これらのサービスは、利用者の居住国以外で情報を処理する場合があります。情報の取り扱いには、各サービスの利用規約、プライバシーポリシーおよび適用法令が適用されます。</p>
+                    <h2>8. 外部サービス</h2>
+                    <p>本アプリは、Google Analytics for Firebase、Google Play Install Referrer API、Google Mobile Ads、Google User Messaging Platform、Google Play BillingおよびGoogle Fontsを利用します。これらのサービスは、利用者の居住国以外で情報を処理する場合があります。情報の取り扱いには、各サービスの利用規約、プライバシーポリシーおよび適用法令が適用されます。</p>
                 </section>
 
                 <section>
-                    <h2>8. 子どもの利用</h2>
+                    <h2>9. 子どもの利用</h2>
                     <p>本アプリは、13歳未満の子どもを対象として設計されたものではありません。当方が子どもから個人情報を意図的に直接収集することはありません。国または地域によっては、現地の年齢基準や保護者同意に関する追加要件が適用される場合があります。</p>
                 </section>
 
                 <section>
-                    <h2>9. 安全管理と保存期間</h2>
+                    <h2>10. 安全管理と保存期間</h2>
                     <p>当方は、本アプリが扱う情報を保護するため合理的な対策を講じます。ただし、電子的な保存または通信の安全性を完全に保証することはできません。</p>
                     <p>端末内で処理された写真・動画は、利用者が削除するまで端末内に残ります。外部サービスが処理する情報の保存期間は、各サービスの方針に従います。</p>
                 </section>
 
                 <section>
-                    <h2>10. 利用者の選択と権利</h2>
+                    <h2>11. 利用者の選択と権利</h2>
                     <p>居住する国または地域によっては、情報へのアクセス、訂正、削除、処理制限、異議申立て、同意撤回などの権利が認められる場合があります。利用者は以下の操作ができます。</p>
                     <ul>
                         <li>表示されている場合、「広告のプライバシー設定」から広告に関する選択を変更する</li>
@@ -209,12 +246,12 @@
                 </section>
 
                 <section>
-                    <h2>11. 本ポリシーの変更</h2>
+                    <h2>12. 本ポリシーの変更</h2>
                     <p>本アプリの機能、使用するサービスまたは法令上の要件に変更があった場合、本ポリシーを更新することがあります。変更後の内容は、制定日または改定日を更新したうえで、このページに掲載します。</p>
                 </section>
 
                 <section>
-                    <h2>12. お問い合わせ</h2>
+                    <h2>13. お問い合わせ</h2>
                     <p>提供者：PATH<br>メールアドレス：<span class="secure-email" data-name="cGFzc2FnZS1pbmZv" data-host="cGF0aC1iaXouY29t">読み込み中…</span></p>
                     <noscript><p>メールアドレス：passage-info [at] path-biz [dot] com</p></noscript>
                 </section>
@@ -226,11 +263,12 @@
         <div class="container">
             <p>&copy; 2026 PATH. All rights reserved.</p>
             <div class="footer-links">
+                <a href="/ratiofit/">RatioFit</a>
                 <a href="/">PATH</a>
                 <a href="/ratiofit/privacy/" aria-current="page">RatioFit Privacy Policy</a>
             </div>
         </div>
-    </footer>
+    <nav class="policy-links" aria-label="Privacy and legal"><a href="/privacy/">プライバシー情報 / Privacy</a><a href="/legal/">特定商取引法に基づく表記 / Legal</a></nav></footer>
 
     <script src="privacy.js"></script>
 </body>

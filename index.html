@@ -1,368 +1,122 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Passage - 旅の軌跡を、美しい一枚に。</title>
-    <meta name="description" content="Passageは、フライトや列車の移動情報を写真に美しくオーバーレイするiOSアプリです。出発/到着地、ルートマップを自動で写真に刻みます。">
-    <link rel="canonical" href="https://yakigakiapp.github.io/">
-    <link rel="alternate" hreflang="ja" href="https://yakigakiapp.github.io/">
-    <link rel="alternate" hreflang="en" href="https://yakigakiapp.github.io/?lang=en">
-    <link rel="alternate" hreflang="x-default" href="https://yakigakiapp.github.io/">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#eef3f6">
+    <title>PATH｜旅のつづきはここから。</title>
+    <meta name="description" content="旅を記録する。軌跡をたどる。思い出を整える。Passage、Timeline Visualizer、RatioFit。PATHのアプリと、新しい旅へ。">
+    <link rel="canonical" href="https://path-biz.com/">
+    <link rel="alternate" hreflang="ja" href="https://path-biz.com/?lang=ja">
+    <link rel="alternate" hreflang="en" href="https://path-biz.com/?lang=en">
+    <link rel="alternate" hreflang="x-default" href="https://path-biz.com/">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Passage">
-    <meta property="og:title" content="Passage - 旅の軌跡を、美しい一枚に。">
-    <meta property="og:description" content="Passageは、フライトや列車の移動情報を写真に美しくオーバーレイするiOSアプリです。出発/到着地、ルートマップを自動で写真に刻みます。">
-    <meta property="og:image" content="https://yakigakiapp.github.io/assets/og-image.jpg">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:url" content="https://yakigakiapp.github.io/">
-    <meta property="og:locale" content="ja_JP">
-    <meta property="og:locale:alternate" content="en_US">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Passage - 旅の軌跡を、美しい一枚に。">
-    <meta name="twitter:description" content="Passageは、フライトや列車の移動情報を写真に美しくオーバーレイするiOSアプリです。出発/到着地、ルートマップを自動で写真に刻みます。">
-    <meta name="twitter:image" content="https://yakigakiapp.github.io/assets/og-image.jpg">
-    <link rel="stylesheet" href="style.css">
+    <meta property="og:site_name" content="PATH">
+    <meta property="og:title" content="PATH｜旅のつづきはここから。">
+    <meta property="og:description" content="旅を記録する。軌跡をたどる。思い出を整える。PATHのアプリと、新しい旅へ。">
+    <meta property="og:url" content="https://path-biz.com/">
+    <meta name="twitter:card" content="summary">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <!-- Google タグ (gtag.js)。送るのは訪問そのもの (ページ URL・参照元・端末や
-         言語・IP から推定した地域) だけで、ページが扱っている中身は送らない。 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/path/path.css?v=20260906-dreamliner2">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"PATH","url":"https://path-biz.com/"}</script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-K0WB15YGY2"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-K0WB15YGY2');
     </script>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3495204307936814"
-            crossorigin="anonymous"></script>
+    <script defer src="/path/path.js?v=20260906-dreamliner-final4"></script>
+<link rel="stylesheet" href="/policy-navigation.css">
 </head>
 <body class="lang-ja">
-    <header>
-        <nav class="container">
-            <div class="logo">
-                <img src="assets/icon.png" alt="Passage Logo" width="32" height="32">
-                <span>Passage</span>
-                <div class="lang-switch">
-                    <button id="btn-ja" class="active">JP</button>
-                    <span>/</span>
-                    <button id="btn-en">EN</button>
-                </div>
+    <a class="skip-link" href="#apps"><span class="lang-ja">プロダクトへスキップ</span><span class="lang-en">Skip to destinations</span></a>
+    <header class="site-header">
+        <nav class="container nav" aria-label="Main navigation">
+            <a class="wordmark" href="./" aria-label="PATH home">PATH<span class="brand-dot" aria-hidden="true"></span></a>
+            <span class="header-note">A LITTLE FURTHER.</span>
+            <div class="nav-actions">
+                <a href="#apps"><span class="lang-ja">プロダクト</span><span class="lang-en">Products</span><span class="nav-count">03</span></a>
+                <a href="#links"><span class="lang-ja">つながる</span><span class="lang-en">Connect</span></a>
+                <div class="language-switch" role="group" aria-label="Language"><button type="button" id="btn-ja" class="active" aria-pressed="true">JP</button><span aria-hidden="true">/</span><button type="button" id="btn-en" aria-pressed="false">EN</button></div>
             </div>
-            <ul>
-                <li><a href="#features"><span class="lang-ja">機能</span><span class="lang-en">Features</span></a></li>
-                <li><a href="#gallery"><span class="lang-ja">ギャラリー</span><span class="lang-en">Gallery</span></a></li>
-                <li><a href="#plus"><span class="lang-ja">Plus</span><span class="lang-en">Plus</span></a></li>
-                <li><a href="#tools"><span class="lang-ja">ツール</span><span class="lang-en">Tools</span></a></li>
-                <li><a href="#sns"><span class="lang-ja">投稿</span><span class="lang-en">Posts</span></a></li>
-                <li><a href="https://docs.google.com/forms/d/e/1FAIpQLSebRQow_j1FnCJyl7z-gf32IAF-gva2hb0vCPYYvckSPqXYug/viewform?usp=header" target="_blank"><span class="lang-ja">サポート</span><span class="lang-en">Support</span></a></li>
-            </ul>
         </nav>
     </header>
-
     <main>
-        <section class="hero">
-            <div class="container hero-content">
-                <div class="hero-text">
-                    <h1>
-                        <span class="lang-ja">旅の軌跡を、<br><span class="highlight">美しい一枚に。</span></span>
-                        <span class="lang-en">Your journey,<br><span class="highlight">captured beautifully.</span></span>
-                    </h1>
-                    <p>
-                        <span class="lang-ja">Passage（パッセージ）は、あなたの旅の写真にフライト情報や移動ルートを美しくオーバーレイするアプリです。位置情報を読み取り、空の路、陸の路を記録します。</span>
-                        <span class="lang-en">Passage is an app that beautifully overlays flight info and routes onto your travel photos. It captures your path through the sky & the ground based on GPS data.</span>
-                    </p>
-                    <div class="cta-buttons">
-                        <a href="https://apps.apple.com/app/id6761323054" class="btn btn-store">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store">
-                        </a>
-                        <a href="https://play.google.com/store/apps/details?id=com.flightphoto.passage" class="btn btn-store" target="_blank">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play">
-                        </a>
+        <div class="journey" id="journey">
+            <div class="scene-stage" aria-hidden="true">
+                <canvas id="flight-canvas"></canvas>
+                <div class="scene-caption"><span class="status-dot"></span> PATH INTERNATIONAL <span class="caption-divider">/</span> RWY 09L / 09R</div>
+                <div class="flight-instruments container">
+                    <div class="flight-steps">
+                        <span class="flight-step is-active" data-step="0"><b>01</b> <span class="lang-ja">出発</span><span class="lang-en">Depart</span></span>
+                        <span class="flight-step" data-step="1"><b>02</b> <span class="lang-ja">飛行</span><span class="lang-en">Explore</span></span>
+                        <span class="flight-step" data-step="2"><b>03</b> <span class="lang-ja">行き先</span><span class="lang-en">Discover</span></span>
                     </div>
-                </div>
-                <div class="hero-image">
-                    <picture>
-                        <source type="image/webp" srcset="assets/screenshot1.webp"
-                                data-ja="assets/screenshot1.webp" data-en="assets/screenshot1_en.webp">
-                        <img src="assets/screenshot1.jpg"
-                             data-ja="assets/screenshot1.jpg"
-                             data-en="assets/screenshot1_en.jpg"
-                             alt="App Screenshot" class="lang-img floating"
-                             width="800" height="1731">
-                    </picture>
+                    <div class="flight-readout"><span id="flight-phase">READY FOR TAKEOFF</span><span class="track"><span id="flight-track"></span></span><span id="flight-progress">00%</span></div>
                 </div>
             </div>
-        </section>
-
-        <section id="features" class="features">
-            <div class="container">
-                <h2 class="section-title">
-                    <span class="lang-ja">主な機能</span>
-                    <span class="lang-en">Key Features</span>
-                </h2>
-                <div class="feature-grid">
-                    <div class="feature-card">
-                        <div class="icon">✈️</div>
-                        <h3>
-                            <span class="lang-ja">フライト詳細を記録</span>
-                            <span class="lang-en">Track Flight Details</span>
-                        </h3>
-                        <p>
-                            <span class="lang-ja">出発/到着空港、航空会社など、空の旅の重要なデータを写真にオーバーレイします。</span>
-                            <span class="lang-en">Overlay airports, airline info, and other vital flight data onto your photos.</span>
-                        </p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="icon">🗺️</div>
-                        <h3>
-                            <span class="lang-ja">精密なルートマップ</span>
-                            <span class="lang-en">Precise Route Maps</span>
-                        </h3>
-                        <p>
-                            <span class="lang-ja">内蔵された地図データを使用して、写真が撮られた瞬間の位置と移動経路を描画します。車での移動やドライブの走行軌跡の描画にも対応。</span>
-                            <span class="lang-en">Draws your location and journey the moment the photo was taken using built-in maps. Also supports drawing driving routes and road trips.</span>
-                        </p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="icon">📸</div>
-                        <h3>
-                            <span class="lang-ja">EXIF情報の自動解析</span>
-                            <span class="lang-en">Auto EXIF Analysis</span>
-                        </h3>
-                        <p>
-                            <span class="lang-ja">写真に含まれる位置情報と撮影日時から、最適な移動情報を自動的に抽出します。過去に撮った写真からでも作成できます。</span>
-                            <span class="lang-en">Automatically extracts movement data from your photos' GPS and timestamp. Works even with photos you took long ago.</span>
-                        </p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="icon">🚆</div>
-                        <h3>
-                            <span class="lang-ja">列車・交通機関対応</span>
-                            <span class="lang-en">Trains & Transit</span>
-                        </h3>
-                        <p>
-                            <span class="lang-ja">飛行機だけでなく、新幹線や電車など、様々な交通機関での旅にも対応しています。</span>
-                            <span class="lang-en">Works with flights, Shinkansen, trains, and various modes of transportation.</span>
-                        </p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="icon">📅</div>
-                        <h3>
-                            <span class="lang-ja">撮影日時をそのまま保持</span>
-                            <span class="lang-en">Keeps Original Timestamps</span>
-                        </h3>
-                        <p>
-                            <span class="lang-ja">作成した画像も元の撮影日時を引き継いで保存されるので、アルバムの時系列が崩れません。</span>
-                            <span class="lang-en">Exported photos keep their original capture date, so your album timeline stays intact.</span>
-                        </p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="icon">📍</div>
-                        <h3>
-                            <span class="lang-ja">ギャラリーマップ</span>
-                            <span class="lang-en">Gallery Map</span>
-                        </h3>
-                        <p>
-                            <span class="lang-ja">撮影地ごとに写真が地図上にまとまり、旅の記憶をひとめで見渡せます。</span>
-                            <span class="lang-en">Photos are grouped by location on a map, so you can see your travel memories at a glance.</span>
-                        </p>
-                    </div>
+            <section class="hero container" aria-labelledby="hero-title">
+                <div class="hero-copy">
+                    <p class="eyebrow"><span class="tiny-cross" aria-hidden="true">+</span> TOOLS FOR YOUR JOURNEY</p>
+                    <h1 id="hero-title"><span class="lang-ja">旅のつづきは<br><span class="text-blue">ここから。</span></span><span class="lang-en">Your next<br>little <span class="text-blue">journey.</span></span></h1>
+                    <p class="hero-description"><span class="lang-ja">旅を記録する。軌跡をたどる。<br>思い出をあなたらしいかたちに。</span><span class="lang-en">Capture the moments. Follow your footsteps.<br>Make every memory your own.</span></p>
+                    <a class="journey-button" href="#apps"><span class="lang-ja">行き先を見つける</span><span class="lang-en">Find your destination</span><span class="button-arrow" aria-hidden="true">↗</span></a>
+                    <span class="hero-footnote">THREE TOOLS. ENDLESS POSSIBILITIES.</span>
                 </div>
-            </div>
-        </section>
-
-        <section id="gallery" class="gallery">
-            <div class="container">
-                <h2 class="section-title">
-                    <span class="lang-ja">ギャラリー</span>
-                    <span class="lang-en">Gallery</span>
-                </h2>
-                <div class="gallery-scroll">
-                    <picture>
-                        <source type="image/webp"
-                                data-ja="assets/screenshot2.webp" data-en="assets/screenshot2_en.webp">
-                        <img data-ja="assets/screenshot2.jpg" data-en="assets/screenshot2_en.jpg" alt="JR九州 列車のオーバーレイ" class="lang-img" width="800" height="1731" decoding="async" data-defer>
-                    </picture>
-                    <picture>
-                        <source type="image/webp"
-                                data-ja="assets/screenshot3.webp" data-en="assets/screenshot3_en.webp">
-                        <img data-ja="assets/screenshot3.jpg" data-en="assets/screenshot3_en.jpg" alt="ロンドンからマンチェスターへの車の走行軌跡" class="lang-img" width="800" height="1731" decoding="async" data-defer>
-                    </picture>
-                    <picture>
-                        <source type="image/webp"
-                                data-ja="assets/screenshot4.webp" data-en="assets/screenshot4_en.webp">
-                        <img data-ja="assets/screenshot4.jpg" data-en="assets/screenshot4_en.jpg" alt="EXIF情報から自動生成したAMS→NCEのルートマップ" class="lang-img" width="800" height="1731" decoding="async" data-defer>
-                    </picture>
-                    <picture>
-                        <source type="image/webp"
-                                data-ja="assets/screenshot5.webp" data-en="assets/screenshot5_en.webp">
-                        <img data-ja="assets/screenshot5.jpg" data-en="assets/screenshot5_en.jpg" alt="過去の写真から作成したHNL→NRTのルートマップ" class="lang-img" width="800" height="1731" decoding="async" data-defer>
-                    </picture>
-                    <picture>
-                        <source type="image/webp"
-                                data-ja="assets/screenshot6.webp" data-en="assets/screenshot6_en.webp">
-                        <img data-ja="assets/screenshot6.jpg" data-en="assets/screenshot6_en.jpg" alt="元の撮影日時を維持して保存される画面" class="lang-img" width="800" height="1731" decoding="async" data-defer>
-                    </picture>
-                    <picture>
-                        <source type="image/webp"
-                                data-ja="assets/screenshot7.webp" data-en="assets/screenshot7_en.webp">
-                        <img data-ja="assets/screenshot7.jpg" data-en="assets/screenshot7_en.jpg" alt="フライト情報の設定画面" class="lang-img" width="800" height="1731" decoding="async" data-defer>
-                    </picture>
-                    <picture>
-                        <source type="image/webp"
-                                data-ja="assets/screenshot8.webp" data-en="assets/screenshot8_en.webp">
-                        <img data-ja="assets/screenshot8.jpg" data-en="assets/screenshot8_en.jpg" alt="撮影地ごとに写真がまとまるギャラリーマップ" class="lang-img" width="800" height="1731" decoding="async" data-defer>
-                    </picture>
+                <a class="scroll-cue" href="#takeoff"><span class="scroll-icon" aria-hidden="true">↓</span><span><span class="lang-ja">スクロールして離陸。</span><span class="lang-en">Scroll to take off.</span><small>LET THE JOURNEY BEGIN</small></span></a>
+                <p id="scene-status" class="scene-status" role="status"></p>
+            </section>
+            <section class="takeoff container" id="takeoff" aria-labelledby="takeoff-title">
+                <div class="takeoff-copy"><p class="eyebrow">A CHANGE OF PERSPECTIVE</p><h2 id="takeoff-title"><span class="lang-ja">いつもの景色に<br>新しい視点を。</span><span class="lang-en">A familiar world.<br>A fresh perspective.</span></h2><p><span class="lang-ja">何気ない移動も忘れたくない瞬間も。<br>小さなツールで旅の記憶を残そう。</span><span class="lang-en">Everyday routes and unforgettable moments.<br>Little tools to take them a little further.</span></p></div>
+                <span class="altitude-label" aria-hidden="true">↑ &nbsp; A LITTLE FURTHER</span>
+            </section>
+            <section class="destinations container" id="apps" aria-labelledby="destinations-title">
+                <div class="destination-intro">
+                    <p class="eyebrow">CHOOSE YOUR DESTINATION</p>
+                    <h2 id="destinations-title"><span class="lang-ja">次は<br>どこへ？</span><span class="lang-en">Where<br>to next?</span></h2>
+                    <p><span class="lang-ja">あなたの旅に合う道具を<br>見つけてください。</span><span class="lang-en">Find the right tool for your journey.<br>Your next destination is up to you.</span></p>
+                    <span class="destination-count"><span class="status-dot"></span> 03 DESTINATIONS AVAILABLE</span>
                 </div>
-            </div>
-        </section>
-
-        <section id="plus" class="plus">
-            <div class="container">
-                <h2 class="section-title">Passage Plus</h2>
-                <p class="plus-lead">
-                    <span class="lang-ja">もっと自由に、もっと美しく。</span>
-                    <span class="lang-en">More freedom, more beauty.</span>
-                </p>
-                <div class="plus-grid">
-                    <div class="plus-card">
-                        <span class="plus-badge">PLUS</span>
-                        <div class="icon">🔤</div>
-                        <h3>
-                            <span class="lang-ja">プレミアムフォント</span>
-                            <span class="lang-en">Premium Fonts</span>
-                        </h3>
-                        <p>
-                            <span class="lang-ja">iOS内蔵の上質な7書体でオーバーレイを自分好みにスタイリング。</span>
-                            <span class="lang-en">Style overlays with 7 premium iOS fonts.</span>
-                        </p>
-                    </div>
-                    <div class="plus-card">
-                        <span class="plus-badge">PLUS</span>
-                        <div class="icon">✂️</div>
-                        <h3>
-                            <span class="lang-ja">クロップ＆白フレーム</span>
-                            <span class="lang-en">Crop & White Frame</span>
-                        </h3>
-                        <p>
-                            <span class="lang-ja">SNS投稿に映える余白フレーム付きでエクスポートできます。</span>
-                            <span class="lang-en">Export with clean white borders, perfect for social media.</span>
-                        </p>
-                    </div>
-                    <div class="plus-card">
-                        <span class="plus-badge">PLUS</span>
-                        <div class="icon">🎫</div>
-                        <h3>
-                            <span class="lang-ja">パス</span>
-                            <span class="lang-en">Passes</span>
-                        </h3>
-                        <p>
-                            <span class="lang-ja">1年パスなど期間パス制。価格はアプリ内でご確認ください。</span>
-                            <span class="lang-en">Term passes including a 1-year pass. See pricing in the app.</span>
-                        </p>
-                    </div>
+                <div class="destination-list">
+                    <article class="destination-card passage-card is-visible">
+                        <div class="ticket-top"><span>DESTINATION 01</span><span>iOS / Android</span></div>
+                        <div class="ticket-main"><img class="app-icon" src="/assets/icon.png" alt="" width="56" height="56" loading="lazy"><div><span class="product-category"><span class="lang-ja">旅を一枚に。</span><span class="lang-en">Your journey in a frame.</span></span><h3>Passage</h3></div><span class="airport-code" aria-hidden="true">PSG</span></div>
+                        <p class="product-description"><span class="lang-ja">旅の写真にフライトや列車のルートを重ねる。<br>移動の記憶を美しい一枚に。</span><span class="lang-en">Add flight details and train routes to your photos.<br>Turn the way you travel into a memory to keep.</span></p>
+                        <div class="ticket-bottom"><div class="store-links"><a href="https://apps.apple.com/app/id6761323054" target="_blank" rel="noopener" data-path-link="Passage App Store"><img src="/assets/app-store-badge.svg" alt="Download on the App Store" width="132" height="44"></a><a href="https://play.google.com/store/apps/details?id=com.flightphoto.passage" target="_blank" rel="noopener" data-path-link="Passage Google Play"><img src="/assets/google-play-badge.svg" alt="Get it on Google Play" width="149" height="44"></a></div><a class="destination-link" href="/passage/" data-destination="passage" data-path-link="Passage product" aria-label="Passage"><span class="lang-ja">出発する</span><span class="lang-en">Let's go</span><span class="circle-arrow" aria-hidden="true">↗</span></a></div>
+                    </article>
+                    <article class="destination-card timeline-card is-visible">
+                        <div class="ticket-top"><span>DESTINATION 02</span><span>Web application</span></div>
+                        <div class="ticket-main"><span class="timeline-icon app-icon" aria-hidden="true">↝</span><div><span class="product-category"><span class="lang-ja">歩いた道をもう一度。</span><span class="lang-en">Retrace your steps.</span></span><h3>Timeline<br class="desktop-break"> Visualizer</h3></div><span class="airport-code" aria-hidden="true">TLV</span></div>
+                        <p class="product-description"><span class="lang-ja">Google マップの移動履歴を動く地図で振り返る。<br>あの日の寄り道から旅の全体像まで。</span><span class="lang-en">Bring your Google Maps history to life.<br>Rediscover the detours and see the whole journey.</span></p>
+                        <div class="ticket-bottom"><span class="product-note"><span class="lang-ja">ブラウザで使えます</span><span class="lang-en">Explore in your browser</span></span><a class="destination-link" href="/timeline-visualizer/" data-destination="timeline" data-path-link="Timeline Visualizer" aria-label="Timeline Visualizer"><span class="lang-ja">出発する</span><span class="lang-en">Let's go</span><span class="circle-arrow" aria-hidden="true">↗</span></a></div>
+                    </article>
+                    <article class="destination-card ratiofit-card is-visible">
+                        <div class="ticket-top"><span>DESTINATION 03</span><span>Android</span></div>
+                        <div class="ticket-main"><img class="app-icon" src="/ratiofit/assets/icon.png" alt="" width="56" height="56" loading="lazy"><div><span class="product-category"><span class="lang-ja">思い出をぴったりのかたちに。</span><span class="lang-en">Make room for every memory.</span></span><h3>RatioFit</h3></div><span class="airport-code" aria-hidden="true">RTF</span></div>
+                        <p class="product-description"><span class="lang-ja">写真や動画を切り抜かずに好きな比率へ。<br>大切な景色をそのまま届けよう。</span><span class="lang-en">Fit photos and videos to any aspect ratio.<br>Keep the whole picture without cropping.</span></p>
+                        <div class="ticket-bottom"><div class="store-links"><a href="https://play.google.com/store/apps/details?id=com.path.ratiofit" target="_blank" rel="noopener" data-path-link="RatioFit Google Play"><img src="/assets/google-play-badge.svg" alt="Get it on Google Play" width="149" height="44"></a></div><a class="destination-link" href="/ratiofit/" data-destination="ratiofit" data-path-link="RatioFit product" aria-label="RatioFit"><span class="lang-ja">出発する</span><span class="lang-en">Let's go</span><span class="circle-arrow" aria-hidden="true">↗</span></a></div>
+                    </article>
+                    <p class="destination-end">MADE BY PATH. BUILT FOR YOUR JOURNEY.</p>
                 </div>
-                <div class="cta-buttons plus-cta">
-                    <a href="https://apps.apple.com/app/id6761323054" class="btn btn-store">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store">
-                    </a>
-                </div>
-            </div>
-        </section>
-
-        <section id="tools" class="tools">
-            <div class="container">
-                <h2 class="section-title">
-                    <span class="lang-ja">関連ツール</span>
-                    <span class="lang-en">Companion Tools</span>
-                </h2>
-                <p class="tools-lead">
-                    <span class="lang-ja">Passage が一枚の写真に一回の移動を刻むアプリなら、こちらは移動の全体像を眺めるためのウェブツールです。アプリの機能とは独立していて、ブラウザだけで動きます。</span>
-                    <span class="lang-en">Passage engraves one journey onto one photo. This is the opposite view — the whole shape of where you've been. It's separate from the app's features and runs entirely in your browser.</span>
-                </p>
-                <a href="timeline-visualizer/" class="tool-card">
-                    <div class="icon">🧭</div>
-                    <h3>Timeline Visualizer</h3>
-                    <p>
-                        <span class="lang-ja">Google マップのロケーション履歴をエクスポートした JSON を読み込むと、貯まっていた移動が、移動手段ごとに色分けされた地図と再生アニメーションで浮かび上がります。新しく記録するものではなく、すでにある履歴を振り返るためのツールです。選んだファイルの中身は端末の中だけで処理され、外部に送信されません。</span>
-                        <span class="lang-en">Load the location history you exported from Google Maps, and the travel you had already accumulated surfaces as a map — color-coded by mode of transport, with a playback animation. It records nothing new; it is for looking back over history you already have. Your file is processed entirely on your device and never uploaded.</span>
-                    </p>
-                    <span class="tool-cta">
-                        <span class="lang-ja">Timeline Visualizer を開く →</span>
-                        <span class="lang-en">Open Timeline Visualizer →</span>
-                    </span>
-                </a>
-                <p class="tool-relation">
-                    <span class="lang-ja">地図で見つけた「あの旅」の写真は、Passage で一枚に仕上げられます。</span>
-                    <span class="lang-en">Spot a trip worth revisiting? Passage turns its photos into a single frame.</span>
-                </p>
-            </div>
-        </section>
-
-        <section id="sns" class="sns">
-            <div class="container">
-                <h2 class="section-title">
-                    <span class="lang-ja">#Passage で共有しよう</span>
-                    <span class="lang-en">Share with #Passage</span>
-                </h2>
-                <p class="sns-lead">
-                    <span class="lang-ja">あなたの旅の一枚を #Passage をつけて投稿してください。素敵な投稿はこちらで紹介します。</span>
-                    <span class="lang-en">Post your travel photos with #Passage — we'll feature our favorite posts here.</span>
-                </p>
-                <div class="sns-links">
-                    <a href="https://x.com/search?q=%23Passage&f=live" target="_blank" rel="noopener" class="btn btn-outline">
-                        <span class="lang-ja">Xで #Passage を見る</span>
-                        <span class="lang-en">View #Passage on X</span>
-                    </a>
-                    <a href="https://www.threads.net/search?q=%23Passage&serp_type=tags" target="_blank" rel="noopener" class="btn btn-outline">
-                        <span class="lang-ja">Threadsで見る</span>
-                        <span class="lang-en">View on Threads</span>
-                    </a>
-                </div>
-                <div id="sns-grid" class="sns-grid"></div>
-            </div>
-        </section>
-
-        <section class="about">
-            <div class="container">
-                <div class="about-content">
-                    <h2>
-                        <span class="lang-ja">こだわり抜かれたデザイン</span>
-                        <span class="lang-en">Exquisite Design</span>
-                    </h2>
-                    <p>
-                        <span class="lang-ja">シンプルでありながら、旅の高揚感を損なわない洗練されたデザイン。あなたの最高の一枚を、より特別なものに変えます。</span>
-                        <span class="lang-en">A sophisticated design that enhances your travel stories. Elevate your best shots into something truly special.</span>
-                    </p>
+            </section>
+        </div>
+        <section class="connect-section" id="links" aria-labelledby="connect-title">
+            <div class="container connect-grid">
+                <div><p class="eyebrow">STAY CONNECTED</p><h2 id="connect-title"><span class="lang-ja">旅の話をつづけよう。</span><span class="lang-en">Keep the journey going.</span></h2><p><span class="lang-ja">新機能のお知らせとみんなの旅の記録。<br>次のきっかけが見つかります。</span><span class="lang-en">New things we're building. Journeys worth sharing.<br>Stay around for what comes next.</span></p></div>
+                <div class="connect-links">
+                    <a href="https://x.com/YakigakiApp" target="_blank" rel="noopener" data-path-link="X account"><span><strong>X</strong><small>@YakigakiApp</small></span><span aria-hidden="true">↗</span></a>
+                    <a href="https://x.com/search?q=%23Passage&amp;f=live" target="_blank" rel="noopener" data-path-link="X Passage hashtag"><span><strong>X / #Passage</strong><small><span class="lang-ja">みんなの旅</span><span class="lang-en">Community journeys</span></small></span><span aria-hidden="true">↗</span></a>
+                    <a href="https://www.threads.net/search?q=%23Passage&amp;serp_type=tags" target="_blank" rel="noopener" data-path-link="Threads Passage hashtag"><span><strong>Threads / #Passage</strong><small><span class="lang-ja">みんなの旅</span><span class="lang-en">Community journeys</span></small></span><span aria-hidden="true">↗</span></a>
+                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSebRQow_j1FnCJyl7z-gf32IAF-gva2hb0vCPYYvckSPqXYug/viewform?usp=header" target="_blank" rel="noopener" data-path-link="Support form"><span><strong><span class="lang-ja">サポート</span><span class="lang-en">Support</span></strong><small><span class="lang-ja">お問い合わせ</span><span class="lang-en">Get in touch</span></small></span><span aria-hidden="true">↗</span></a>
                 </div>
             </div>
         </section>
     </main>
-
-    <footer>
-        <div class="container">
-            <p>&copy; 2026 Passage. Developed by Yakigaki.</p>
-            <div class="footer-links">
-                <a href="timeline-visualizer/">Timeline Visualizer</a>
-                <a href="https://docs.google.com/forms/d/e/1FAIpQLSebRQow_j1FnCJyl7z-gf32IAF-gva2hb0vCPYYvckSPqXYug/viewform?usp=header" target="_blank">
-                    <span class="lang-ja">サポート</span>
-                    <span class="lang-en">Support</span>
-                </a>
-                <a href="https://sites.google.com/view/passage-app-privacypolicy">Privacy Policy</a>
-                <a href="ratiofit/privacy/">RatioFit Privacy</a>
-                <a href="legal.html">
-                    <span class="lang-ja">特定商取引法に基づく表記</span>
-                    <span class="lang-en">Legal Notice</span>
-                </a>
-            </div>
-        </div>
-    </footer>
-
-    <script src="posts.js"></script>
-    <script src="script.js"></script>
+    <footer class="site-footer"><div class="container footer-row"><a class="wordmark" href="./" aria-label="PATH home">PATH<span class="brand-dot" aria-hidden="true"></span></a><span>© 2026 PATH</span><nav aria-label="Legal"><a href="/legal/"><span class="lang-ja">特定商取引法に基づく表記</span><span class="lang-en">Legal information</span></a></nav><a class="back-top" href="#journey" aria-label="Back to top">↑</a></div><nav class="policy-links" aria-label="Privacy and legal"><a href="/privacy/">プライバシー情報 / Privacy</a></nav></footer>
+    <div id="departure-overlay" class="departure-overlay" aria-hidden="true"><div class="departure-info"><span class="eyebrow">YOUR NEXT DESTINATION</span><div class="departure-route"><span>PATH</span><span class="route-dashes" aria-hidden="true">&mdash;&mdash;↗&mdash;&mdash;</span><span id="departure-code">PSG</span></div><span id="departure-name">Passage</span></div></div>
+    <noscript><style>.takeoff,.scene-stage{display:none}.hero{min-height:70vh}.destinations{padding-top:3rem}</style></noscript>
 </body>
 </html>
