@@ -365,7 +365,6 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
   let disposed = false;
   let ready = false;
   let departure = null;
-  let cruiseSlot = null;
   const point = new THREE.Vector3();
   const cruisePoint = new THREE.Vector3();
   const baseRotation = new THREE.Euler();
@@ -442,14 +441,11 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
     // catches up gradually, instead of lifting the plane straight off one point.
     point.set(runwayX + lift * 32, groundPlaneY + gearPivot + lift * 14.0, runwayZ);
     point.multiplyScalar(worldScale).add(airport.position);
-    const lane = mobile ? cruiseSlot?.lane ?? 0 : 0;
-    const cruiseX = mobile ? cruiseSlot?.x ?? 0.5 : 0.255;
-    const cruiseY = mobile ? cruiseSlot?.y ?? 0.255 : desktopCruiseY;
-    screenPoint(cruiseX, cruiseY, cruisePoint);
+    screenPoint(mobile ? 0.5 : 0.255, mobile ? 0.255 : desktopCruiseY, cruisePoint);
     plane.position.copy(point).lerp(cruisePoint, cruise);
-    const cruiseScale = (viewWidth * (mobile ? cruiseSlot?.width ?? 0.64 : desktopCruiseWidth)) / planeProjectedWidth;
+    const cruiseScale = (viewWidth * (mobile ? 0.64 : desktopCruiseWidth)) / planeProjectedWidth;
     plane.scale.setScalar(lerp(worldScale * groundAircraftScale, cruiseScale, closeup));
-    baseRotation.set(-cruise * 0.11 - lane * 0.07, -cruise * 0.16, pitch, 'YXZ');
+    baseRotation.set(-cruise * 0.11, -cruise * 0.16, pitch, 'YXZ');
     plane.quaternion.setFromEuler(baseRotation);
     // Once airborne, track the aircraft rather than keeping the airfield below
     // it. Apply this only after deriving its takeoff position, so the receding
@@ -465,18 +461,17 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
     gear.visible = progress < 0.51;
     aircraft.setWingFlex(lift);
     clouds.forEach((cloud, i) => {
-      const cloudSpread = lerp(1, 0.20, lane);
       // Travel only within each cloud's existing safe pocket of air. Different
       // scroll speeds and phases give depth without drifting into the text.
       const phase = ((cloudScroll * [0.85, 1.08, 0.68][i] + [0.16, 0.49, 0.81][i]) % 1 + 1) % 1;
       const drift = reducedMotion ? 0 : 0.5 - phase;
       const edgeFade = reducedMotion ? 1 : smooth(0, 0.16, phase) * (1 - smooth(0.84, 1, phase));
       cloudMaterials[i].opacity = smooth(0.6, 0.78, progress) * edgeFade * 0.87;
-      const x = mobile ? cruiseX + [-0.34, 0.31, 0.19][i] * cloudSpread : [0.07, 0.38, 0.32][i];
-      const y = mobile ? cruiseY + [-0.045, 0.065, -0.10][i] * cloudSpread : desktopCruiseY + [-0.07, 0.09, -0.10][i];
-      screenPoint(x + drift * (mobile ? 0.12 * cloudSpread : 0.07), y + drift * 0.028 * cloudSpread + (1 - cruise) * 0.14, cloud.position);
+      const x = mobile ? [0.16, 0.81, 0.69][i] : [0.07, 0.38, 0.32][i];
+      const y = mobile ? [0.21, 0.32, 0.12][i] : desktopCruiseY + [-0.07, 0.09, -0.10][i];
+      screenPoint(x + drift * (mobile ? 0.12 : 0.07), y + drift * 0.028 + (1 - cruise) * 0.14, cloud.position);
       cloud.position.addScaledVector(towardCamera, -4 - i);
-      cloud.scale.setScalar(viewWidth * (mobile ? 0.105 * cloudSpread : 0.055) * [0.8, 1, 0.64][i]);
+      cloud.scale.setScalar(viewWidth * (mobile ? 0.105 : 0.055) * [0.8, 1, 0.64][i]);
       cloud.visible = progress > 0.58;
     });
   }
@@ -544,7 +539,7 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
     const rect = canvas.getBoundingClientRect();
     width = Math.max(1, rect.width || window.innerWidth);
     height = Math.max(1, rect.height || window.innerHeight);
-    mobile = width <= 760;
+    mobile = width < 760;
     viewHeight = mobile ? 16 : 15;
     viewWidth = viewHeight * width / height;
     camera.left = -viewWidth / 2;
@@ -581,12 +576,6 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
     setCloudScroll(value) {
       if (disposed || departure?.resolve) return;
       targetCloudScroll = Number.isFinite(value) ? value : 0;
-      requestFrame();
-    },
-    // Unlike takeoff progress, a DOM slot keeps moving after progress reaches 1.
-    setCruiseSlot(value) {
-      if (disposed || departure) return;
-      cruiseSlot = value;
       requestFrame();
     },
     setProgress(value) {
