@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.min.js';
-import { buildDreamliner } from './flight-aircraft.js?v=20260906-dreamliner-final';
+import { buildDreamliner } from './flight-aircraft.js?v=20260906-path-tail-layout1';
 
 const clamp = THREE.MathUtils.clamp;
 const lerp = THREE.MathUtils.lerp;
@@ -361,6 +361,7 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
   let disposed = false;
   let ready = false;
   let departure = null;
+  let cruiseSlot = null;
   const point = new THREE.Vector3();
   const cruisePoint = new THREE.Vector3();
   const baseRotation = new THREE.Euler();
@@ -437,11 +438,14 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
     // catches up gradually, instead of lifting the plane straight off one point.
     point.set(runwayX + lift * 32, groundPlaneY + gearPivot + lift * 14.0, runwayZ);
     point.multiplyScalar(worldScale).add(airport.position);
-    screenPoint(mobile ? 0.5 : 0.255, mobile ? 0.255 : desktopCruiseY, cruisePoint);
+    const lane = mobile ? cruiseSlot?.lane ?? 0 : 0;
+    const cruiseX = mobile ? cruiseSlot?.x ?? 0.5 : 0.255;
+    const cruiseY = mobile ? cruiseSlot?.y ?? 0.255 : desktopCruiseY;
+    screenPoint(cruiseX, cruiseY, cruisePoint);
     plane.position.copy(point).lerp(cruisePoint, cruise);
-    const cruiseScale = (viewWidth * (mobile ? 0.64 : desktopCruiseWidth)) / planeProjectedWidth;
+    const cruiseScale = (viewWidth * (mobile ? cruiseSlot?.width ?? 0.64 : desktopCruiseWidth)) / planeProjectedWidth;
     plane.scale.setScalar(lerp(worldScale * groundAircraftScale, cruiseScale, closeup));
-    baseRotation.set(-cruise * 0.11, -cruise * 0.16, pitch, 'YXZ');
+    baseRotation.set(-cruise * 0.11 - lane * 0.07, -cruise * 0.16, pitch, 'YXZ');
     plane.quaternion.setFromEuler(baseRotation);
     // Once airborne, track the aircraft rather than keeping the airfield below
     // it. Apply this only after deriving its takeoff position, so the receding
@@ -458,11 +462,12 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
     aircraft.setWingFlex(lift);
     cloudMaterial.opacity = smooth(0.6, 0.78, progress) * 0.87;
     clouds.forEach((cloud, i) => {
-      const x = mobile ? [0.16, 0.81, 0.69][i] : [0.07, 0.38, 0.32][i];
-      const y = mobile ? [0.21, 0.32, 0.12][i] : desktopCruiseY + [-0.07, 0.09, -0.10][i];
+      const cloudSpread = lerp(1, 0.20, lane);
+      const x = mobile ? cruiseX + [-0.34, 0.31, 0.19][i] * cloudSpread : [0.07, 0.38, 0.32][i];
+      const y = mobile ? cruiseY + [-0.045, 0.065, -0.10][i] * cloudSpread : desktopCruiseY + [-0.07, 0.09, -0.10][i];
       screenPoint(x, y + (1 - cruise) * 0.14, cloud.position);
       cloud.position.addScaledVector(towardCamera, -4 - i);
-      cloud.scale.setScalar(viewWidth * (mobile ? 0.105 : 0.055) * [0.8, 1, 0.64][i]);
+      cloud.scale.setScalar(viewWidth * (mobile ? 0.105 * cloudSpread : 0.055) * [0.8, 1, 0.64][i]);
       cloud.visible = progress > 0.58;
     });
   }
@@ -528,7 +533,7 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
     const rect = canvas.getBoundingClientRect();
     width = Math.max(1, rect.width || window.innerWidth);
     height = Math.max(1, rect.height || window.innerHeight);
-    mobile = width < 760;
+    mobile = width <= 760;
     viewHeight = mobile ? 16 : 15;
     viewWidth = viewHeight * width / height;
     camera.left = -viewWidth / 2;
@@ -562,6 +567,12 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
   resize();
 
   return {
+    // Unlike takeoff progress, a DOM slot keeps moving after progress reaches 1.
+    setCruiseSlot(value) {
+      if (disposed || departure) return;
+      cruiseSlot = value;
+      requestFrame();
+    },
     setProgress(value) {
       if (disposed || departure?.resolve) return;
       // A completed departure may return through the browser's back/forward cache.

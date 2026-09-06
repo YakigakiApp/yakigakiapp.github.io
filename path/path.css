@@ -379,11 +379,22 @@ footer { background: #e5ecf1; }
     .footer-row nav { flex-direction: column; align-items: flex-start; gap: 4px; }
 }
 @media (max-width: 760px) {
-    .destinations { padding-top: 340px; }
-    .destination-intro { background: var(--paper); padding-block: 20px 28px; }
+    .destinations { padding-top: 180px; }
+    .destination-intro { background: none; padding-block: 20px 0; }
+    .destination-intro > :not(.destination-flight-slot) { max-width: 64%; }
+    .destination-intro > p:not(.eyebrow):not(.kicker) { max-width: 64%; }
+    .destination-flight-slot { display: block; height: clamp(210px, 42vw, 280px); margin-top: 18px; }
 }
+.destination-flight-slot { pointer-events: none; }
+@media (min-width: 761px) { .destination-flight-slot { display: none; } }
+.scene-unavailable .destination-flight-slot { display: none; }
+.scene-unavailable .destination-intro > :not(.destination-flight-slot) { max-width: none; }
+.scene-unavailable .destination-intro > p:not(.eyebrow):not(.kicker) { max-width: none; }
 @media (prefers-reduced-motion: reduce) {
     .destinations { padding-top: 60px; }
+    .destination-flight-slot { display: none; }
+    .destination-intro > :not(.destination-flight-slot) { max-width: none; }
+    .destination-intro > p:not(.eyebrow):not(.kicker) { max-width: none; }
 }
 
 

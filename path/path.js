@@ -65,7 +65,35 @@
         const contact = document.getElementById('links');
         body.classList.toggle('destinations-visible', Boolean(apps && apps.getBoundingClientRect().top < window.innerHeight - 76));
         body.classList.toggle('flight-ended', Boolean(contact && contact.getBoundingClientRect().top < window.innerHeight * 0.48));
-        if (!departure && scene) scene.setProgress(progress);
+        if (!departure && scene) {
+            const slot = document.querySelector('.destination-flight-slot');
+            const heading = document.getElementById('destinations-title');
+            const bounds = slot?.getBoundingClientRect();
+            const stage = canvas.getBoundingClientRect();
+            const headingTop = heading?.getBoundingClientRect().top ?? window.innerHeight;
+            let destinationPose = null;
+            if (bounds?.height && window.innerWidth <= 760) {
+                const ease = (value) => { const t = Math.max(0, Math.min(1, value)); return t * t * (3 - 2 * t); };
+                const mix = (a, b, t) => a + (b - a) * t;
+                const viewport = window.innerHeight;
+                const rail = ease((viewport * 0.95 - headingTop) / (viewport * 0.40));
+                // Move down the reserved right-hand lane before crossing into
+                // the full-width slot. It grows within the visible slot area
+                // and reaches full size once the entire slot fits on screen.
+                const settle = ease((viewport + 64 - bounds.bottom) / 80);
+                const descend = ease((viewport * 1.10 - bounds.top) / (viewport * 0.35));
+                const slotY = bounds.top + bounds.height / 2;
+                const railY = mix(Math.max(viewport * 0.30, Math.min(viewport * 0.65, headingTop + 90)), Math.min(viewport - 80, slotY), descend);
+                destinationPose = {
+                    x: mix(mix(0.5, 0.84, rail), (bounds.left + bounds.width / 2 - stage.left) / stage.width, settle),
+                    y: mix(mix(0.255, (railY - stage.top) / stage.height, rail), (slotY - stage.top) / stage.height, settle),
+                    width: mix(mix(0.64, 0.23, rail), 0.56, settle),
+                    lane: rail * (1 - settle)
+                };
+            }
+            scene.setCruiseSlot(destinationPose);
+            scene.setProgress(progress);
+        }
         updateFlightLabels();
     }
 
@@ -150,7 +178,7 @@
         if (!canvas) return;
         const version = ++sceneVersion;
         try {
-            const { createFlightScene } = await import('./flight-scene.js?v=20260906-forward-climb1');
+            const { createFlightScene } = await import('./flight-scene.js?v=20260906-path-tail-layout1');
             if (version !== sceneVersion) return;
             const nextScene = await createFlightScene(canvas, {
                 reducedMotion: motionPreference.matches,

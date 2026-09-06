@@ -158,9 +158,35 @@ export function buildDreamliner({ own, materials: m, detailed = true }) {
   foil([[-1.83, 0.24], [-2.03, 0.32], [-2.75, 1.128], [-3.007, 1.155], [-2.632, 0.22]], 0.046, m.blue, false);
   const tail = foil([[-2.09, 0], [-2.945, -0.9815], [-3.125, -0.9815], [-2.819, 0], [-3.125, 0.9815], [-2.945, 0.9815]], 0.027, m.porcelain, true);
   tail.position.y = 0.116;
+  // Font-independent tail lettering, merged into one small mesh per side.
+  // The negative-Z mark reverses its reading axis, not its glyphs, so PATH reads
+  // correctly from either side. The inset bounds stay inside the blue fin.
+  const glyphs = [
+    { outline: [[0,0],[1.2,0],[1.2,2.9],[3.7,2.9],[5,4.1],[5,5.8],[3.7,7],[0,7]], holes: [[[1.2,4.1],[3.2,4.1],[3.8,4.6],[3.8,5.3],[3.2,5.8],[1.2,5.8]]] },
+    { outline: [[0,0],[1.45,7],[3.55,7],[5,0],[3.7,0],[3.3,2],[1.7,2],[1.3,0]], holes: [[[1.95,3.2],[3.05,3.2],[2.5,5.9]]] },
+    { outline: [[0,7],[5,7],[5,5.8],[3.1,5.8],[3.1,0],[1.9,0],[1.9,5.8],[0,5.8]] },
+    { outline: [[0,0],[1.2,0],[1.2,2.9],[3.8,2.9],[3.8,0],[5,0],[5,7],[3.8,7],[3.8,4.1],[1.2,4.1],[1.2,7],[0,7]] },
+  ];
+  const logoVertices = [];
+  glyphs.forEach(({ outline, holes = [] }, glyphIndex) => {
+    const points = outline.map(([x, y]) => new THREE.Vector2(x + glyphIndex * 6, y));
+    const counters = holes.map((hole) => hole.map(([x, y]) => new THREE.Vector2(x + glyphIndex * 6, y)));
+    const allPoints = points.concat(...counters);
+    THREE.ShapeUtils.triangulateShape(points, counters).forEach((triangle) => {
+      triangle.forEach((index) => {
+        const { x, y } = allPoints[index];
+        logoVertices.push((x - 11.5) * 0.014 + y * 0.001, y * 0.0185, 0);
+      });
+    });
+  });
+  const logoGeometry = own(new THREE.BufferGeometry());
+  logoGeometry.setAttribute('position', new THREE.Float32BufferAttribute(logoVertices, 3));
+  logoGeometry.computeVertexNormals();
   for (const side of [-1, 1]) {
-    const stripe = box(group, -2.66, 0.77, side * 0.032, 0.095, 0.26, 0.006, m.porcelain);
-    stripe.rotation.z = -0.35;
+    const logo = mesh(logoGeometry, m.porcelain, group, -2.60, 0.61, side * 0.033);
+    logo.name = side > 0 ? 'PATH tail wordmark port' : 'PATH tail wordmark starboard';
+    logo.rotation.y = side > 0 ? 0 : Math.PI;
+    logo.castShadow = false;
   }
 
   // Separate front windscreens and five-corner side windows, conforming to the
