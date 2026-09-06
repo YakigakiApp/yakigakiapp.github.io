@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,follow">
+  <meta http-equiv="refresh" content="5;url=https://path-biz.com/passage/">
+  <link rel="canonical" href="https://path-biz.com/passage/">
+  <title>Passage — サイト移転のお知らせ / We have moved</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; color: #23394b; background: #f1f5f7; }
+    body { min-height: 100svh; margin: 0; display: grid; place-items: center; }
+    main { width: min(36rem, calc(100% - 4rem)); padding: 2rem 0; }
+    .brand { font-weight: 700; letter-spacing: .15em; }
+    h1 { font-size: clamp(1.5rem, 5vw, 2rem); line-height: 1.4; }
+    p { line-height: 1.8; }
+    a { display: inline-block; padding: .9rem 1.2rem; border-radius: .6rem; color: white; background: #23394b; text-decoration: none; }
+    a:focus-visible { outline: 3px solid #dd7a3e; outline-offset: 4px; }
+    .english { margin-top: 2rem; color: #506778; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="brand">PATH / Passage</p>
+    <h1>Passageのサイトが移転しました</h1>
+    <p>新しいサイトへ自動的に移動します。移動しない場合は下のリンクを押してください。</p>
+    <a id="destination" href="https://path-biz.com/passage/">Passageのサイトへ / Open Passage</a>
+    <div class="english" lang="en">
+      <h2>We have moved</h2>
+      <p>You will be redirected to the new Passage website. If nothing happens, use the link above.</p>
+    </div>
+  </main>
+  <script>
+    // Keep the destination fixed. Only language and section navigation carry over.
+    const destination = new URL('https://path-biz.com/passage/');
+    const language = new URLSearchParams(location.search).get('lang');
+    if (language === 'ja' || language === 'en') destination.searchParams.set('lang', language);
+    if (/^#[A-Za-z0-9_-]{1,80}$/.test(location.hash)) destination.hash = location.hash;
+    document.getElementById('destination').href = destination.href;
+    setTimeout(() => location.replace(destination.href), 1500);
+  </script>
+</body>
+</html>
