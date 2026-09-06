@@ -55,10 +55,12 @@
 
     function updateProgress() {
         pendingFrame = 0;
+        let cloudScroll = 0;
         if (journey && apps) {
             const start = journey.getBoundingClientRect().top + window.scrollY;
             const end = apps.getBoundingClientRect().top + window.scrollY - 100;
             progress = Math.max(0, Math.min(1, (window.scrollY - start) / Math.max(1, end - start)));
+            cloudScroll = (window.scrollY - start) / Math.max(1, window.innerHeight);
         }
         // Retire the flight instruments as the opaque contact/footer section enters.
         // The stage is also clipped by .journey so it never paints over legal links.
@@ -92,6 +94,7 @@
                 };
             }
             scene.setCruiseSlot(destinationPose);
+            scene.setCloudScroll(cloudScroll);
             scene.setProgress(progress);
         }
         updateFlightLabels();
@@ -178,7 +181,7 @@
         if (!canvas) return;
         const version = ++sceneVersion;
         try {
-            const { createFlightScene } = await import('./flight-scene.js?v=20260906-path-tail-layout1');
+            const { createFlightScene } = await import('./flight-scene.js?v=20260906-scroll-clouds1');
             if (version !== sceneVersion) return;
             const nextScene = await createFlightScene(canvas, {
                 reducedMotion: motionPreference.matches,

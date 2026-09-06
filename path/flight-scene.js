@@ -333,9 +333,11 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
     airport.add(parked);
   }
   // Clouds are small matte sculptural groups, never a backdrop that hides the model.
-  const cloudMaterial = material(0xffffff, { transparent: true, opacity: 0, depthWrite: false });
+  const cloudMaterials = [];
   const clouds = [];
   for (let i = 0; i < 3; i++) {
+    const cloudMaterial = material(0xffffff, { transparent: true, opacity: 0, depthWrite: false });
+    cloudMaterials.push(cloudMaterial);
     const cloud = new THREE.Group();
     [[-0.57, 0, 0.42], [-0.18, 0.18, 0.56], [0.39, 0.06, 0.46], [0.7, -0.03, 0.27]].forEach(([x, y, size]) => {
       const puff = sphere(cloud, x, y, 0, size, size * 0.58, size * 0.65, cloudMaterial);
@@ -356,6 +358,8 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
   let lastMask = "";
   let targetProgress = 0;
   let progress = 0;
+  let targetCloudScroll = 0;
+  let cloudScroll = 0;
   let lastTime = 0;
   let frame = 0;
   let disposed = false;
@@ -460,12 +464,17 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
     gear.scale.y = 1 - smooth(0.35, 0.51, progress);
     gear.visible = progress < 0.51;
     aircraft.setWingFlex(lift);
-    cloudMaterial.opacity = smooth(0.6, 0.78, progress) * 0.87;
     clouds.forEach((cloud, i) => {
       const cloudSpread = lerp(1, 0.20, lane);
+      // Travel only within each cloud's existing safe pocket of air. Different
+      // scroll speeds and phases give depth without drifting into the text.
+      const phase = ((cloudScroll * [0.85, 1.08, 0.68][i] + [0.16, 0.49, 0.81][i]) % 1 + 1) % 1;
+      const drift = reducedMotion ? 0 : 0.5 - phase;
+      const edgeFade = reducedMotion ? 1 : smooth(0, 0.16, phase) * (1 - smooth(0.84, 1, phase));
+      cloudMaterials[i].opacity = smooth(0.6, 0.78, progress) * edgeFade * 0.87;
       const x = mobile ? cruiseX + [-0.34, 0.31, 0.19][i] * cloudSpread : [0.07, 0.38, 0.32][i];
       const y = mobile ? cruiseY + [-0.045, 0.065, -0.10][i] * cloudSpread : desktopCruiseY + [-0.07, 0.09, -0.10][i];
-      screenPoint(x, y + (1 - cruise) * 0.14, cloud.position);
+      screenPoint(x + drift * (mobile ? 0.12 * cloudSpread : 0.07), y + drift * 0.028 * cloudSpread + (1 - cruise) * 0.14, cloud.position);
       cloud.position.addScaledVector(towardCamera, -4 - i);
       cloud.scale.setScalar(viewWidth * (mobile ? 0.105 * cloudSpread : 0.055) * [0.8, 1, 0.64][i]);
       cloud.visible = progress > 0.58;
@@ -480,6 +489,8 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
     if (!departure) {
       progress = reducedMotion ? targetProgress : lerp(progress, targetProgress, 1 - Math.exp(-dt * 8));
       if (Math.abs(targetProgress - progress) < 0.00008) progress = targetProgress;
+      cloudScroll = reducedMotion ? targetCloudScroll : lerp(cloudScroll, targetCloudScroll, 1 - Math.exp(-dt * 8));
+      if (Math.abs(targetCloudScroll - cloudScroll) < 0.00008) cloudScroll = targetCloudScroll;
       layout();
     } else {
       departure.elapsed += dt * 1000;
@@ -512,7 +523,7 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
           .addScaledVector(right, -viewWidth * departure.direction * travel * 0.25)
           .addScaledVector(up, -viewHeight * travel * (0.18 + index * 0.035));
       });
-      cloudMaterial.opacity = smooth(0.6, 0.78, progress) * (1 - t) * 0.87;
+      cloudMaterials.forEach((material, i) => { material.opacity = departure.cloudOpacities[i] * (1 - t); });
       if (t === 1) {
         const done = departure.resolve;
         departure.resolve = null;
@@ -523,7 +534,7 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
     }
     renderer.render(scene, camera);
     if (!ready) { ready = true; onReady?.(); }
-    if (departure || Math.abs(targetProgress - progress) > 0.00008) requestFrame();
+    if (departure || Math.abs(targetProgress - progress) > 0.00008 || Math.abs(targetCloudScroll - cloudScroll) > 0.00008) requestFrame();
   }
   function requestFrame() {
     if (!frame && !disposed && !document.hidden) frame = requestAnimationFrame(render);
@@ -567,6 +578,11 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
   resize();
 
   return {
+    setCloudScroll(value) {
+      if (disposed || departure?.resolve) return;
+      targetCloudScroll = Number.isFinite(value) ? value : 0;
+      requestFrame();
+    },
     // Unlike takeoff progress, a DOM slot keeps moving after progress reaches 1.
     setCruiseSlot(value) {
       if (disposed || departure) return;
@@ -603,6 +619,7 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
         airportPosition: airport.position.clone(), airportQuaternion: airport.quaternion.clone(), airportScale: airport.scale.x,
         airportVisible: airport.visible,
         cloudPositions: clouds.map((cloud) => cloud.position.clone()),
+        cloudOpacities: cloudMaterials.map((material) => material.opacity),
         direction: clamp(Number(direction) || 0, -1, 1), duration: reducedMotion ? 120 : Math.max(240, duration),
         elapsed: 0, resolve, promise,
       };
