@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.min.js';
-import { buildDreamliner } from './flight-aircraft.js?v=20260906-path-tail-layout1';
+import { buildDreamliner } from './flight-aircraft.js?v=20260906-landing-solid-tail1';
 
 const clamp = THREE.MathUtils.clamp;
 const lerp = THREE.MathUtils.lerp;
@@ -9,7 +9,7 @@ const smooth = (a, b, value) => {
 };
 
 /** A self-contained miniature airport. All animation is derived from scroll progress. */
-export function createFlightScene(canvas, { reducedMotion = false, onReady } = {}) {
+export function createFlightScene(canvas, { reducedMotion = false, onReady, onStateChange } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
   renderer.setClearColor(0x000000, 0);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
@@ -365,6 +365,63 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
   let disposed = false;
   let ready = false;
   let departure = null;
+  let flightMotion = null;
+  let lastScrollInput = null;
+  let reverseDistance = 0;
+  let forwardDistance = 0;
+  let scrollViewport = window.innerHeight;
+  let lastStatus = '';
+  const flightStatus = () => ({ mode: departure ? 'departing' : flightMotion?.mode ?? 'outbound', phase: flightMotion?.phase ?? (progress < 0.29 ? 'takeoff-roll' : 'climbing'), returnT: flightMotion?.t ?? 0 });
+  const worldUp = new THREE.Vector3(0, 1, 0);
+  const wheelBounds = new THREE.Box3();
+  // THREE.slerp chooses the shortest hemisphere on every call. A moving
+  // destination near 180 degrees can cross that boundary between frames.
+  // Keep one quaternion hemisphere for the complete manoeuvre instead.
+  function manoeuvreRotation(from, to, amount, motion) {
+    if (!motion.rotationReference) {
+      motion.rotationReference = to.clone();
+      if (from.dot(to) < 0) motion.rotationReference.set(-to.x, -to.y, -to.z, -to.w);
+    }
+    const target = to.clone();
+    if (target.dot(motion.rotationReference) < 0) target.set(-target.x, -target.y, -target.z, -target.w);
+    const dot = clamp(from.dot(target), -1, 1);
+    if (dot > 0.9995) return new THREE.Quaternion(
+      lerp(from.x, target.x, amount), lerp(from.y, target.y, amount), lerp(from.z, target.z, amount), lerp(from.w, target.w, amount)).normalize();
+    const angle = Math.acos(dot);
+    const denominator = Math.max(0.00001, Math.sin(angle));
+    const a = Math.sin((1 - amount) * angle) / denominator;
+    const b = Math.sin(amount * angle) / denominator;
+    return new THREE.Quaternion(from.x * a + target.x * b, from.y * a + target.y * b, from.z * a + target.z * b, from.w * a + target.w * b).normalize();
+  }
+  const snapshotPose = () => ({
+    position: plane.position.clone(), quaternion: plane.quaternion.clone(), scale: plane.scale.x,
+    airportPosition: airport.position.clone(), airportQuaternion: airport.quaternion.clone(), airportScale: airport.scale.x,
+    airportVisible: airport.visible, gear: gear.visible ? gear.scale.y : 0,
+    localPosition: plane.position.clone().sub(airport.position).applyQuaternion(airport.quaternion.clone().invert()).divideScalar(airport.scale.x)
+  });
+
+  function beginMotion(mode, scroll) {
+    const anchor = snapshotPose();
+    const forward = new THREE.Vector3(1, 0, 0).applyQuaternion(anchor.quaternion);
+    const yaw = Math.atan2(-forward.z, forward.x);
+    const yawDelta = Math.atan2(Math.sin(Math.PI - yaw), Math.cos(Math.PI - yaw));
+    const fromGround = !departure && anchor.gear > 0.98 && (flightMotion?.phase === 'landed' || flightMotion?.phase === 'rollout');
+    flightMotion = { mode, anchor, startScroll: cloudScroll,
+      range: mode === 'return' ? Math.max(0.0001, cloudScroll) : fromGround ? 1.4 : 0.65,
+      fromGround, yaw, yawDelta, phase: mode === 'return' ? 'turning' : 'climbing', t: 0 };
+    reverseDistance = forwardDistance = 0;
+  }
+
+  function observeScroll(value) {
+    if (lastScrollInput !== null && !reducedMotion && !departure) {
+      const delta = value - lastScrollInput;
+      reverseDistance = delta < 0 ? reverseDistance - delta : delta > 0 ? 0 : reverseDistance;
+      forwardDistance = delta > 0 ? forwardDistance + delta : delta < 0 ? 0 : forwardDistance;
+      if (reverseDistance >= 0.09 && flightMotion?.mode !== 'return' && (progress > 0.38 || flightMotion?.mode === 'resume')) beginMotion('return', value);
+      else if (forwardDistance >= 0.07 && flightMotion?.mode === 'return') beginMotion('resume', value);
+    }
+    lastScrollInput = value;
+  }
   const point = new THREE.Vector3();
   const cruisePoint = new THREE.Vector3();
   const baseRotation = new THREE.Euler();
@@ -399,7 +456,7 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
   aircraft.setWingFlex(0);
   const runwayFocus = new THREE.Vector3();
 
-  function layout() {
+  function outboundLayout() {
     const tracking = smooth(0.34, 0.80, progress);
     const lift = smooth(0.29, 0.68, progress);
     const cruise = smooth(0.43, 0.80, progress);
@@ -476,6 +533,126 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
     });
   }
 
+  function layout() {
+    outboundLayout();
+    if (!flightMotion || reducedMotion) return;
+    const motion = flightMotion;
+    const a = motion.anchor;
+    const t = clamp((motion.mode === 'return' ? motion.startScroll - cloudScroll : cloudScroll - motion.startScroll) / motion.range, 0, 1);
+    motion.t = t;
+    // Keep the complete turn visible. The normal hero crop is restored only
+    // after a new outbound flight has finished merging with its original path.
+    canvas.style.maskImage = canvas.style.webkitMaskImage = 'none';
+    lastMask = 'none';
+    if (motion.mode === 'resume' && motion.fromGround) {
+      const destination = snapshotPose();
+      const join = smooth(0.72, 1, t);
+      const localHeading = new THREE.Vector3(1, 0, 0).applyQuaternion(a.quaternion).applyQuaternion(a.airportQuaternion.clone().invert());
+      localHeading.y = 0; localHeading.normalize();
+      // Accelerate along the runway before rotation: about 20 local units of
+      // ground roll, then continue beyond its end while the camera follows.
+      const distance = 160 * t * t;
+      const pitch = 0.20 * smooth(0.30, 0.44, t);
+      const pivot = (-groundContactX * Math.sin(pitch) + aircraft.groundClearance * (Math.cos(pitch) - 1)) * groundAircraftScale;
+      const altitude = 40 * smooth(0.36, 1, t);
+      const localPlane = a.localPosition.clone().addScaledVector(localHeading, distance);
+      localPlane.y = groundPlaneY + pivot + altitude;
+      const scale = a.airportScale * lerp(1, 0.12, smooth(0.40, 0.86, t));
+      const forward = localHeading.clone().applyQuaternion(a.airportQuaternion);
+      const trackedPlane = a.position.clone().addScaledVector(forward, viewWidth * 0.10 * smooth(0, 0.60, t))
+        .addScaledVector(up, viewHeight * 0.12 * smooth(0.36, 0.82, t));
+      airport.position.copy(trackedPlane).sub(localPlane.clone().multiplyScalar(scale).applyQuaternion(a.airportQuaternion)).lerp(destination.airportPosition, join);
+      airport.quaternion.copy(a.airportQuaternion).slerp(destination.airportQuaternion, join);
+      airport.scale.setScalar(lerp(scale, destination.airportScale, join));
+      airport.visible = a.airportVisible || destination.airportVisible;
+      plane.position.copy(trackedPlane).lerp(destination.position, join);
+      const takeoffRotation = a.quaternion.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), pitch));
+      // Positive world-Y yaw projects counterclockwise in this camera. Keep
+      // that left-turn branch explicit; interpolate pitch/roll independently.
+      const targetForward = new THREE.Vector3(1, 0, 0).applyQuaternion(destination.quaternion);
+      const targetYaw = Math.atan2(-targetForward.z, targetForward.x);
+      const leftYaw = ((targetYaw - motion.yaw) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+      const fromTilt = new THREE.Quaternion().setFromAxisAngle(worldUp, -motion.yaw).multiply(takeoffRotation);
+      const toTilt = new THREE.Quaternion().setFromAxisAngle(worldUp, -targetYaw).multiply(destination.quaternion);
+      plane.quaternion.setFromAxisAngle(worldUp, motion.yaw + leftYaw * join).multiply(fromTilt.slerp(toTilt, join));
+      plane.scale.setScalar(lerp(a.scale, destination.scale, join));
+      gear.scale.y = a.gear * (1 - smooth(0.43, 0.70, t));
+      gear.visible = gear.scale.y > 0.01;
+      aircraft.setWingFlex(smooth(0.33, 0.65, t));
+      motion.phase = t < 0.30 ? 'takeoff-roll' : t < 0.40 ? 'rotation' : 'climbing';
+      if (t < 0.65) {
+        const edge = lerp(mobile ? 58 : 46, -18, smooth(0.30, 0.65, t));
+        const mask = 'linear-gradient(to ' + (mobile ? 'bottom' : 'right') + ', transparent ' + edge.toFixed(2) + '%, #000 ' + (edge + (mobile ? 8 : 9)).toFixed(2) + '%)';
+        canvas.style.maskImage = canvas.style.webkitMaskImage = mask;
+        lastMask = mask;
+      }
+      if (t >= 1) flightMotion = null;
+      return;
+    }
+    if (motion.mode === 'resume') {
+      const blend = smooth(0, 1, t);
+      const destination = plane.position.clone();
+      const destinationRotation = plane.quaternion.clone();
+      plane.position.copy(a.position).lerp(destination, blend)
+        .addScaledVector(up, Math.sin(Math.PI * t) * viewHeight * 0.07);
+      plane.quaternion.copy(manoeuvreRotation(a.quaternion, destinationRotation, blend, motion));
+      plane.scale.setScalar(lerp(a.scale, plane.scale.x, blend));
+      airport.position.lerp(a.airportPosition, 1 - blend);
+      airport.quaternion.slerp(a.airportQuaternion, 1 - blend);
+      airport.scale.setScalar(lerp(a.airportScale, airport.scale.x, blend));
+      airport.visible = a.airportVisible || airport.visible;
+      gear.scale.y = lerp(a.gear, gear.scale.y, smooth(0.15, 0.80, t));
+      gear.visible = gear.scale.y > 0.01;
+      motion.phase = 'climbing';
+      if (t >= 1) flightMotion = null;
+      return;
+    }
+
+    const turn = smooth(0, 0.34, t);
+    const theta = turn * motion.yawDelta;
+    const heading = new THREE.Vector3(1, 0, 0).applyQuaternion(a.quaternion);
+    heading.y = 0; heading.normalize();
+    const side = new THREE.Vector3().crossVectors(worldUp, heading).normalize();
+    const radius = viewWidth * 0.045 * (Math.sign(motion.yawDelta) || 1);
+    const turnPosition = a.position.clone().addScaledVector(heading, radius * Math.sin(theta))
+      .addScaledVector(side, radius * (1 - Math.cos(theta)))
+      .addScaledVector(up, viewHeight * 0.035 * Math.sin(turn * Math.PI));
+    const approach = clamp((t - 0.34) / 0.50, 0, 1);
+    const rollout = clamp((t - 0.84) / 0.16, 0, 1);
+    const runwayX = 115 - 85 * approach - 12 * (1 - (1 - rollout) ** 2);
+    const approachScale = Math.min(airportInitialScale, viewWidth * 0.55 / 100);
+    const groundScale = t < 0.34 ? lerp(a.airportScale, approachScale, smooth(0, 0.34, t)) : lerp(approachScale, airportInitialScale, smooth(0.34, 0.88, t));
+    const landingFrame = screenPoint(mobile ? 0.52 : 0.755, mobile ? 0.755 : 0.68);
+    const pitch = 0.11 * (1 - smooth(0.70, 0.84, t));
+    const pivot = (-groundContactX * Math.sin(pitch) + aircraft.groundClearance * (Math.cos(pitch) - 1)) * groundAircraftScale;
+    const altitude = 32 * (1 - smooth(0.34, 0.82, t));
+    const approachLocal = new THREE.Vector3(runwayX, groundPlaneY + pivot + altitude, runwayZ);
+    const localPlane = a.localPosition.clone().lerp(approachLocal, smooth(0, 0.34, t));
+    plane.position.copy(turnPosition).lerp(landingFrame, smooth(0.34, 0.82, t));
+    airport.quaternion.copy(a.airportQuaternion).slerp(new THREE.Quaternion(), smooth(0, 0.34, t));
+    airport.scale.setScalar(groundScale);
+    // A single camera-tracking transform ties altitude and forward travel to
+    // the runway. The threshold approaches from ahead instead of rising below.
+    airport.position.copy(plane.position).sub(localPlane.multiplyScalar(groundScale).applyQuaternion(airport.quaternion));
+    airport.visible = a.airportVisible || t > 0.02;
+    const reverseHeading = new THREE.Quaternion().setFromAxisAngle(worldUp, motion.yaw + motion.yawDelta);
+    reverseHeading.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), pitch));
+    plane.quaternion.copy(manoeuvreRotation(a.quaternion, reverseHeading, turn, motion));
+    plane.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(departureAxis, Math.sin(turn * Math.PI) * 0.48 * clamp(motion.yawDelta / Math.PI, -1, 1)));
+    plane.scale.setScalar(lerp(a.scale, groundScale * groundAircraftScale, smooth(0.34, 0.82, t)));
+    gear.scale.y = lerp(a.gear, 1, smooth(0.42, 0.75, t));
+    gear.visible = gear.scale.y > 0.01;
+    aircraft.setWingFlex(1 - smooth(0.70, 0.87, t));
+    motion.phase = t < 0.34 ? 'turning' : t < 0.70 ? 'approach' : t < 0.84 ? 'landing' : t < 0.999 ? 'rollout' : 'landed';
+    const maskReturn = smooth(0.88, 1, t);
+    if (maskReturn > 0) {
+      const edge = lerp(-18, mobile ? 58 : 46, maskReturn);
+      const mask = 'linear-gradient(to ' + (mobile ? 'bottom' : 'right') + ', transparent ' + edge.toFixed(2) + '%, #000 ' + (edge + (mobile ? 8 : 9)).toFixed(2) + '%)';
+      canvas.style.maskImage = canvas.style.webkitMaskImage = mask;
+      lastMask = mask;
+    }
+  }
+
   function render(time) {
     frame = 0;
     if (disposed || document.hidden) return;
@@ -492,27 +669,36 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
       const t = clamp(departure.elapsed / departure.duration, 0, 1);
       const travel = t * t * (0.65 + 0.35 * t);
       plane.position.copy(departure.position)
-        .addScaledVector(right, viewWidth * departure.direction * travel * 0.92)
-        .addScaledVector(up, viewHeight * (0.22 * Math.sin(t * Math.PI * 0.5) + travel * 0.68))
-        .addScaledVector(towardCamera, travel * 9);
+        .addScaledVector(departure.forward, viewWidth * (0.12 * t + travel * 1.15))
+        .addScaledVector(up, viewHeight * (0.10 * t + travel * 0.80))
+        .addScaledVector(towardCamera, travel * 5);
       plane.scale.setScalar(departure.scale * (1 + travel * 1.45));
-      baseRotation.set(-0.34 * Math.sin(t * Math.PI), -departure.direction * t * 0.38, 0.12 + 0.5 * t, 'YXZ');
-      baseQuaternion.setFromEuler(baseRotation);
-      plane.quaternion.copy(departure.quaternion).slerp(baseQuaternion, smooth(0, 0.75, t));
+      plane.quaternion.copy(departure.quaternion)
+        .multiply(new THREE.Quaternion().setFromAxisAngle(worldUp, -departure.direction * smooth(0, 1, t) * 0.38))
+        .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), smooth(0, 1, t) * 0.45));
       bankQuaternion.setFromAxisAngle(departureAxis, departure.direction * Math.sin(t * Math.PI) * 0.36);
       plane.quaternion.multiply(bankQuaternion);
-      gear.visible = false;
+      gear.scale.y = departure.gear * (1 - smooth(0.12, 0.65, t));
+      gear.visible = gear.scale.y > 0.01;
       // Track the departing aircraft: the runway and terminal slip backwards,
       // descend, and recede together instead of remaining a static backdrop.
-      airport.position.copy(departure.airportPosition)
-        .addScaledVector(right, -viewWidth * departure.direction * travel * 0.31)
-        .addScaledVector(up, -viewHeight * travel * 0.42)
-        .addScaledVector(towardCamera, -travel * 12);
       airport.scale.setScalar(departure.airportScale * lerp(1, 0.14, smooth(0, 1, t)));
       airport.visible = departure.airportVisible;
       airport.quaternion.copy(departure.airportQuaternion);
       bankQuaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, -departure.direction * travel * 0.10);
       airport.quaternion.multiply(bankQuaternion);
+      const localTravel = viewWidth / Math.max(0.001, departure.airportScale) * (0.12 * t + 0.90 * travel);
+      const departingLocal = departure.localPosition.clone().addScaledVector(departure.localForward, localTravel)
+        .addScaledVector(worldUp, viewHeight / Math.max(0.001, departure.airportScale) * travel * 0.35);
+      if (departure.gear > 0.98 && gear.visible) {
+        // The close-up scale and departure bank can lower a wheel relative to
+        // the fuselage. Keep the tracked runway below that actual wheel bound.
+        plane.updateMatrixWorld(true);
+        wheelBounds.setFromObject(gear);
+        const wheelOffset = plane.position.y - wheelBounds.min.y;
+        departingLocal.y = Math.max(departingLocal.y, runwayTop + (wheelOffset + viewHeight * travel * 0.05) / airport.scale.x);
+      }
+      airport.position.copy(plane.position).sub(departingLocal.multiplyScalar(airport.scale.x).applyQuaternion(airport.quaternion));
       clouds.forEach((cloud, index) => {
         cloud.position.copy(departure.cloudPositions[index])
           .addScaledVector(right, -viewWidth * departure.direction * travel * 0.25)
@@ -527,6 +713,9 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
         return;
       }
     }
+    const status = flightStatus();
+    const statusKey = status.mode + ':' + status.phase;
+    if (statusKey !== lastStatus) { lastStatus = statusKey; onStateChange?.(status); }
     renderer.render(scene, camera);
     if (!ready) { ready = true; onReady?.(); }
     if (departure || Math.abs(targetProgress - progress) > 0.00008 || Math.abs(targetCloudScroll - cloudScroll) > 0.00008) requestFrame();
@@ -536,6 +725,16 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
   }
   function resize() {
     if (disposed) return;
+    const nextViewport = Math.max(1, window.innerHeight);
+    if (nextViewport !== scrollViewport) {
+      const ratio = scrollViewport / nextViewport;
+      cloudScroll *= ratio;
+      targetCloudScroll *= ratio;
+      if (flightMotion) { flightMotion.startScroll *= ratio; flightMotion.range *= ratio; }
+      scrollViewport = nextViewport;
+    }
+    lastScrollInput = null;
+    reverseDistance = forwardDistance = 0;
     const rect = canvas.getBoundingClientRect();
     width = Math.max(1, rect.width || window.innerWidth);
     height = Math.max(1, rect.height || window.innerHeight);
@@ -575,6 +774,7 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
   return {
     setCloudScroll(value) {
       if (disposed || departure?.resolve) return;
+      observeScroll(Number.isFinite(value) ? value : 0);
       targetCloudScroll = Number.isFinite(value) ? value : 0;
       requestFrame();
     },
@@ -587,12 +787,16 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
     },
     setReducedMotion(value) {
       reducedMotion = Boolean(value);
+      if (reducedMotion) flightMotion = null;
       requestFrame();
     },
-    cancelDeparture() {
+    cancelDeparture({ restore = false } = {}) {
       if (disposed || !departure) return;
       const done = departure.resolve;
+      const previousMotion = departure.savedMotion;
+      if (!restore) beginMotion('resume', cloudScroll);
       departure = null;
+      if (restore) flightMotion = previousMotion;
       lastTime = 0;
       layout();
       requestFrame();
@@ -609,6 +813,10 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
         airportVisible: airport.visible,
         cloudPositions: clouds.map((cloud) => cloud.position.clone()),
         cloudOpacities: cloudMaterials.map((material) => material.opacity),
+        forward: new THREE.Vector3(1, 0, 0).applyQuaternion(plane.quaternion).normalize(),
+        localPosition: plane.position.clone().sub(airport.position).applyQuaternion(airport.quaternion.clone().invert()).divideScalar(airport.scale.x),
+        localForward: new THREE.Vector3(1, 0, 0).applyQuaternion(plane.quaternion).applyQuaternion(airport.quaternion.clone().invert()).normalize(),
+        gear: gear.visible ? gear.scale.y : 0, savedMotion: flightMotion,
         direction: clamp(Number(direction) || 0, -1, 1), duration: reducedMotion ? 120 : Math.max(240, duration),
         elapsed: 0, resolve, promise,
       };
@@ -617,6 +825,26 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
       return promise;
     },
     resize,
+    getFlightStatus: flightStatus,
+    getFlightState() {
+      scene.updateMatrixWorld(true);
+      wheelBounds.setFromObject(gear);
+      const runwayWorldY = airport.position.y + runwayTop * airport.scale.x;
+      const clearance = wheelBounds.min.y - runwayWorldY;
+      const localPosition = airport.worldToLocal(plane.position.clone());
+      const localHeading = new THREE.Vector3(1, 0, 0).applyQuaternion(plane.quaternion).applyQuaternion(airport.quaternion.clone().invert()).normalize();
+      const projected = (point) => { const p = point.project(camera); return [p.x, p.y]; };
+      return {
+        mode: departure ? 'departing' : flightMotion?.mode ?? 'outbound', phase: flightMotion?.phase ?? (progress < 0.29 ? 'takeoff-roll' : 'climbing'),
+        progress, targetProgress, cloudScroll, targetCloudScroll, returnT: flightMotion?.t ?? 0,
+        plane: { position: plane.position.toArray(), quaternion: plane.quaternion.toArray(), scale: plane.scale.x, airportLocalPosition: localPosition.toArray(), airportLocalHeading: localHeading.toArray() },
+        airport: { position: airport.position.toArray(), quaternion: airport.quaternion.toArray(), scale: airport.scale.x, visible: airport.visible },
+        gear: { visible: gear.visible, scaleY: gear.scale.y },
+        ground: { contact: gear.visible && Math.abs(clearance) < 0.015, clearance, runwayWorldY, gearBottomWorldY: wheelBounds.min.y },
+        screen: { plane: projected(plane.position.clone()), nose: projected(plane.localToWorld(new THREE.Vector3(3.14, 0, 0))), runwayThreshold: projected(airport.localToWorld(new THREE.Vector3(42, runwayTop, runwayZ))) },
+        departure: departure ? { elapsed: departure.elapsed, duration: departure.duration } : null
+      };
+    },
     dispose() {
       if (disposed) return;
       disposed = true;

@@ -32,8 +32,11 @@
     let departure = null;
 
     function updateFlightLabels() {
-        const phase = progress < 0.2 ? 0 : progress < 0.68 ? 1 : 2;
-        if (phaseLabel) phaseLabel.textContent = phases[language][phase];
+        const flight = scene?.getFlightStatus?.();
+        const returning = flight?.mode === 'return';
+        const phase = returning ? (flight.returnT < 0.70 ? 1 : 0) : progress < 0.2 ? 0 : progress < 0.68 ? 1 : 2;
+        const returnLabels = language === 'en' ? { turning: 'Turning home', approach: 'Approach', landing: 'Landing', rollout: 'Landing roll', landed: 'Landed' } : { turning: '帰投旋回', approach: '着陸進入', landing: '着陸', rollout: '着陸滑走', landed: '着陸完了' };
+        if (phaseLabel) phaseLabel.textContent = returning ? returnLabels[flight.phase] : phases[language][phase];
         if (progressLabel) progressLabel.textContent = String(Math.round(progress * 100)).padStart(2, '0') + '%';
         if (progressTrack) progressTrack.style.transform = 'scaleX(' + progress + ')';
         steps.forEach((step) => {
@@ -155,10 +158,11 @@
         if (!canvas) return;
         const version = ++sceneVersion;
         try {
-            const { createFlightScene } = await import('./flight-scene.js?v=20260906-transparent-intro1');
+            const { createFlightScene } = await import('./flight-scene.js?v=20260906-landing-solid-tail1');
             if (version !== sceneVersion) return;
             const nextScene = await createFlightScene(canvas, {
                 reducedMotion: motionPreference.matches,
+                onStateChange: () => updateFlightLabels(),
                 onReady: () => {
                     if (version !== sceneVersion) return;
                     sceneState = 'ready';
@@ -183,7 +187,7 @@
     function clearDeparture() {
         if (departure) departure.timers.forEach(clearTimeout);
         departure = null;
-        if (scene && typeof scene.cancelDeparture === 'function') scene.cancelDeparture();
+        if (scene && typeof scene.cancelDeparture === 'function') scene.cancelDeparture({ restore: true });
         body.classList.remove('is-departing');
         if (overlay) {
             overlay.classList.remove('is-visible');
