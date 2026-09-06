@@ -400,6 +400,7 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
     const lift = smooth(0.29, 0.68, progress);
     const cruise = smooth(0.43, 0.80, progress);
     const closeup = smooth(0.36, 0.78, progress);
+    const groundRetreat = smooth(0.31, 0.79, progress);
     const pullback = smooth(0.025, 0.46, progress);
     const releaseRunwayFocus = smooth(0.22, 0.47, progress);
     const desktopHeightMix = smooth(700, 900, height);
@@ -432,7 +433,9 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
     }
     const pitch = smooth(0.27, 0.39, progress) * 0.23 - smooth(0.52, 0.8, progress) * 0.11;
     const gearPivot = (-groundContactX * Math.sin(pitch) + aircraft.groundClearance * (Math.cos(pitch) - 1)) * groundAircraftScale * (1 - lift);
-    point.set(runwayX, groundPlaneY + gearPivot + lift * 14.0, runwayZ);
+    // Continue travelling along the runway heading after rotation. The camera
+    // catches up gradually, instead of lifting the plane straight off one point.
+    point.set(runwayX + lift * 32, groundPlaneY + gearPivot + lift * 14.0, runwayZ);
     point.multiplyScalar(worldScale).add(airport.position);
     screenPoint(mobile ? 0.5 : 0.255, mobile ? 0.255 : desktopCruiseY, cruisePoint);
     plane.position.copy(point).lerp(cruisePoint, cruise);
@@ -440,6 +443,16 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
     plane.scale.setScalar(lerp(worldScale * groundAircraftScale, cruiseScale, closeup));
     baseRotation.set(-cruise * 0.11, -cruise * 0.16, pitch, 'YXZ');
     plane.quaternion.setFromEuler(baseRotation);
+    // Once airborne, track the aircraft rather than keeping the airfield below
+    // it. Apply this only after deriving its takeoff position, so the receding
+    // ground cannot drag the aircraft down with it. The entire airfield passes
+    // outside the frame before it is hidden; no shared material opacity changes.
+    airport.position
+      .addScaledVector(right, -viewWidth * 0.40 * groundRetreat)
+      .addScaledVector(up, -viewHeight * 0.48 * groundRetreat)
+      .addScaledVector(towardCamera, -8 * groundRetreat);
+    airport.scale.setScalar(worldScale * lerp(1, 0.18, groundRetreat));
+    airport.visible = progress < 0.82;
     gear.scale.y = 1 - smooth(0.35, 0.51, progress);
     gear.visible = progress < 0.51;
     aircraft.setWingFlex(lift);
@@ -485,6 +498,7 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
         .addScaledVector(up, -viewHeight * travel * 0.42)
         .addScaledVector(towardCamera, -travel * 12);
       airport.scale.setScalar(departure.airportScale * lerp(1, 0.14, smooth(0, 1, t)));
+      airport.visible = departure.airportVisible;
       airport.quaternion.copy(departure.airportQuaternion);
       bankQuaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, -departure.direction * travel * 0.10);
       airport.quaternion.multiply(bankQuaternion);
@@ -576,6 +590,7 @@ export function createFlightScene(canvas, { reducedMotion = false, onReady } = {
       departure = {
         position: plane.position.clone(), quaternion: plane.quaternion.clone(), scale: plane.scale.x,
         airportPosition: airport.position.clone(), airportQuaternion: airport.quaternion.clone(), airportScale: airport.scale.x,
+        airportVisible: airport.visible,
         cloudPositions: clouds.map((cloud) => cloud.position.clone()),
         direction: clamp(Number(direction) || 0, -1, 1), duration: reducedMotion ? 120 : Math.max(240, duration),
         elapsed: 0, resolve, promise,

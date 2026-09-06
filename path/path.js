@@ -150,7 +150,7 @@
         if (!canvas) return;
         const version = ++sceneVersion;
         try {
-            const { createFlightScene } = await import('./flight-scene.js?v=20260906-dreamliner-final4');
+            const { createFlightScene } = await import('./flight-scene.js?v=20260906-forward-climb1');
             if (version !== sceneVersion) return;
             const nextScene = await createFlightScene(canvas, {
                 reducedMotion: motionPreference.matches,
