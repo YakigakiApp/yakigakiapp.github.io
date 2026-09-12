@@ -14,8 +14,8 @@
     const cards = Array.from(document.querySelectorAll('.destination-card'));
     const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
     const destinations = {
-        passage: { name: 'Passage', code: 'PSG', direction: -1, ja: '/passage/?lang=ja', en: '/passage/?lang=en' },
-        timeline: { name: 'Timeline Visualizer', code: 'TLV', direction: 0, ja: '/timeline-visualizer/?lang=ja', en: '/timeline-visualizer/?lang=en' },
+        passage: { name: 'Passage', code: 'PSG', direction: -1, ja: '/passage/', en: '/passage/?lang=en' },
+        timeline: { name: 'Timeline Visualizer', code: 'TLV', direction: 0, ja: '/timeline-visualizer/', en: '/timeline-visualizer/?lang=en' },
         ratiofit: { name: 'RatioFit', code: 'RTF', direction: 1, ja: '/ratiofit/', en: '/ratiofit/en/' }
     };
     const phases = {
@@ -93,12 +93,12 @@
             button.classList.toggle('active', language === code);
             button.setAttribute('aria-pressed', String(language === code));
         });
-        document.title = english ? 'PATH | Your next little journey.' : 'PATH｜旅のつづきはここから。';
+        document.title = english ? 'PATH | Travel Photo Apps, Timeline Maps & Video Resizing' : 'PATH｜旅行写真・移動履歴・動画編集のアプリとWebツール';
         const description = document.querySelector('meta[name="description"]');
         if (description) {
             description.content = english
                 ? 'Capture your journeys. Retrace your steps. Shape your memories. Passage, Timeline Visualizer, and RatioFit. Begin a new journey with PATH.'
-                : '旅を記録する。軌跡をたどる。思い出を整える。Passage、Timeline Visualizer、RatioFit。PATHのアプリと、新しい旅へ。';
+                : 'PATHの公式サイト。旅行写真にフライト・鉄道ルートを重ねるPassage、Google マップの移動履歴を地図で再生するTimeline Visualizer、写真・動画の比率を切り抜かずに変更するRatioFitをご紹介します。';
         }
         const socialTitle = document.querySelector('meta[property="og:title"]');
         const socialDescription = document.querySelector('meta[property="og:description"]');

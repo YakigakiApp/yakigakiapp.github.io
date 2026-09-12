@@ -69,10 +69,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const legal = /^\/legal(?:\/|\.html$)/.test(window.location.pathname);
         const title = legal
             ? (english ? 'PATH - Legal Information' : 'PATH - 特定商取引法に基づく表記 / Legal Information')
-            : (english ? 'Passage | A journey worth keeping.' : 'Passage｜旅の軌跡を美しい一枚に。');
+            : (english ? 'Passage | Flight & Train Route Overlays for Travel Photos' : 'Passage｜旅行写真にフライト・鉄道ルートを重ねるアプリ');
         const description = legal
             ? (english ? 'Legal and trader information for apps provided by PATH.' : 'PATHが提供するアプリに関する特定商取引法に基づく表記およびEU/EEA向け事業者情報です。')
-            : (english ? 'Add flight details and train routes to your travel photos. Passage turns photo location data into a journey worth keeping, on iOS and Android.' : 'フライトや列車のルートを旅の写真に。Passageは写真の位置情報から移動の軌跡を描くiOS・Androidアプリです。');
+            : (english ? 'Add flight details and train routes to your travel photos. Passage turns photo location data into a journey worth keeping, on iOS and Android.' : 'Passageは旅行写真にフライト・鉄道・ドライブのルートを重ねるiPhone・Androidアプリ。写真の位置情報と撮影日時から旅の軌跡を描き、元の撮影日時を保って保存できます。');
         document.title = title;
         const metadata = { 'meta[name="description"]': description, 'meta[property="og:title"]': title, 'meta[property="og:description"]': description, 'meta[name="twitter:title"]': title, 'meta[name="twitter:description"]': description, 'meta[property="og:locale"]': english ? 'en_US' : 'ja_JP', 'meta[property="og:locale:alternate"]': english ? 'ja_JP' : 'en_US' };
         Object.entries(metadata).forEach(([selector, content]) => {
@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (meta) meta.content = content;
         });
         document.querySelectorAll('.lang-img').forEach((img) => showImage(img, currentLang));
-        const routes = { hub: english ? '/?lang=en' : '/?lang=ja', timeline: english ? '/timeline-visualizer/?lang=en' : '/timeline-visualizer/?lang=ja', ratiofit: english ? '/ratiofit/en/' : '/ratiofit/', legal: english ? '/legal/?lang=en' : '/legal/?lang=ja' };
+        const routes = { hub: english ? '/?lang=en' : '/', timeline: english ? '/timeline-visualizer/?lang=en' : '/timeline-visualizer/', ratiofit: english ? '/ratiofit/en/' : '/ratiofit/', legal: english ? '/legal/?lang=en' : '/legal/?lang=ja' };
         document.querySelectorAll('[data-lang-link]').forEach((link) => {
             if (routes[link.dataset.langLink]) link.setAttribute('href', routes[link.dataset.langLink]);
         });
@@ -95,9 +95,9 @@ document.addEventListener('DOMContentLoaded', () => {
     buttons.ja?.addEventListener('click', () => setLanguage('ja', true));
     buttons.en?.addEventListener('click', () => setLanguage('en', true));
     let savedLang;
-    try { savedLang = localStorage.getItem('preferred-lang'); } catch (_) { /* Fall back to the browser language. */ }
+    try { savedLang = localStorage.getItem('preferred-lang'); } catch (_) { /* Fall back to the canonical Japanese content. */ }
     const urlLang = new URLSearchParams(window.location.search).get('lang');
-    const initialLang = ['ja', 'en'].includes(urlLang) ? urlLang : ['ja', 'en'].includes(savedLang) ? savedLang : navigator.language.startsWith('ja') ? 'ja' : 'en';
+    const initialLang = ['ja', 'en'].includes(urlLang) ? urlLang : ['ja', 'en'].includes(savedLang) ? savedLang : 'ja';
     setLanguage(initialLang);
     window.addEventListener('popstate', () => {
         const lang = new URLSearchParams(window.location.search).get('lang');

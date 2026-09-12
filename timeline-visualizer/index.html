@@ -5,19 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="/path/flight-transition.css" />
 <script src="../path/flight-transition.js"></script>
-<title>Timeline Visualizer — Google マップのタイムラインを地図で描く</title>
+<title>Timeline Visualizer｜Google マップのタイムライン・移動履歴を地図で可視化</title>
 <meta name="description" content="Google マップからエクスポートしたタイムライン JSON を、移動手段ごとに色分けした地図と再生アニメーションで振り返るツール。選んだファイルの中身は端末の中だけで処理され、外部に送信されません。" />
 <meta name="theme-color" content="#fbfaf8" />
 <link rel="canonical" href="https://path-biz.com/timeline-visualizer/" />
-<link rel="alternate" hreflang="ja" href="https://path-biz.com/timeline-visualizer/?lang=ja" />
-<link rel="alternate" hreflang="en" href="https://path-biz.com/timeline-visualizer/?lang=en" />
-<link rel="alternate" hreflang="ko" href="https://path-biz.com/timeline-visualizer/?lang=ko" />
-<link rel="alternate" hreflang="zh-Hans" href="https://path-biz.com/timeline-visualizer/?lang=zh-Hans" />
-<link rel="alternate" hreflang="zh-Hant" href="https://path-biz.com/timeline-visualizer/?lang=zh-Hant" />
-<link rel="alternate" hreflang="x-default" href="https://path-biz.com/timeline-visualizer/" />
 <meta property="og:url" content="https://path-biz.com/timeline-visualizer/" />
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Timeline Visualizer" />
+<meta property="og:title" content="Timeline Visualizer｜Google マップのタイムライン・移動履歴を地図で可視化" />
 <meta property="og:description" content="Google マップのタイムラインを、移動手段ごとに色分けした地図で振り返る。選んだファイルの中身は端末の外に出ません。" />
 <!-- 上の title / description / og:* は JS 未実行時の初期表示 (ja)。
      applyLang() が起動時に、選ばれた言語のものへ書き換える。 -->
@@ -510,6 +504,79 @@
   body.resizing #map { pointer-events: none; }
 </style>
 <link rel="stylesheet" href="/policy-navigation.css">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://path-biz.com/#organization",
+      "name": "PATH",
+      "url": "https://path-biz.com/",
+      "sameAs": [
+        "https://x.com/YakigakiApp"
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://path-biz.com/#website",
+      "name": "PATH",
+      "url": "https://path-biz.com/",
+      "publisher": {
+        "@id": "https://path-biz.com/#organization"
+      }
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://path-biz.com/timeline-visualizer/#webpage",
+      "url": "https://path-biz.com/timeline-visualizer/",
+      "name": "Timeline Visualizer｜Google マップのタイムライン・移動履歴を地図で可視化",
+      "description": "Google マップからエクスポートしたタイムライン JSON を、移動手段ごとに色分けした地図と再生アニメーションで振り返るツール。選んだファイルの中身は端末の中だけで処理され、外部に送信されません。",
+      "inLanguage": "ja",
+      "isPartOf": {
+        "@id": "https://path-biz.com/#website"
+      },
+      "breadcrumb": {
+        "@id": "https://path-biz.com/timeline-visualizer/#breadcrumb"
+      },
+      "mainEntity": {
+        "@id": "https://path-biz.com/timeline-visualizer/#application"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://path-biz.com/timeline-visualizer/#breadcrumb",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "PATH",
+          "item": "https://path-biz.com/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Timeline Visualizer",
+          "item": "https://path-biz.com/timeline-visualizer/"
+        }
+      ]
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://path-biz.com/timeline-visualizer/#application",
+      "name": "Timeline Visualizer",
+      "url": "https://path-biz.com/timeline-visualizer/",
+      "description": "Google マップからエクスポートしたタイムライン JSON を、移動手段ごとに色分けした地図と再生アニメーションで振り返るツール。選んだファイルの中身は端末の中だけで処理され、外部に送信されません。",
+      "applicationCategory": "TravelApplication",
+      "operatingSystem": "Any",
+      "publisher": {
+        "@id": "https://path-biz.com/#organization"
+      }
+    }
+  ]
+}
+</script>
 </head>
 <body>
 
@@ -564,6 +631,10 @@
     <div class="privacy">
       <p data-i18n-html="privacy.html">選択したファイルの中身は、読込みから地図上への描画まで、<b>すべてお使いの端末の中だけ</b>で処理されます。外部に送信されることも、保存されることもありません。</p>
     </div>
+    <details class="howto">
+      <summary data-i18n="about.title">Timeline Visualizerでできること</summary>
+      <p data-i18n="about.description">Google マップから書き出したタイムラインのJSONを読み込み、移動履歴を地図で可視化するWebツールです。期間を選んで、徒歩・電車・車・飛行機などの経路を色分けして再生できます。移動距離や移動時間を振り返り、地図を画像で保存できます。新しい位置情報の記録は行いません。</p>
+    </details>
     <details class="howto">
       <summary data-i18n="howto.summary">タイムラインの書き出し方</summary>
       <h3>iPhone</h3>
@@ -724,7 +795,9 @@
 
 const I18N = {
   ja: {
-    "meta.title": "Timeline Visualizer — Google マップのタイムラインを地図で描く",
+    "about.title": "Timeline Visualizerでできること",
+    "about.description": "Google マップから書き出したタイムラインのJSONを読み込み、移動履歴を地図で可視化するWebツールです。期間を選んで、徒歩・電車・車・飛行機などの経路を色分けして再生できます。移動距離や移動時間を振り返り、地図を画像で保存できます。新しい位置情報の記録は行いません。",
+    "meta.title": "Timeline Visualizer｜Google マップのタイムライン・移動履歴を地図で可視化",
     "meta.description": "Google マップからエクスポートしたタイムライン JSON を、移動手段ごとに色分けした地図と再生アニメーションで振り返るツール。選んだファイルの中身は端末の中だけで処理され、外部に送信されません。",
     "meta.ogTitle": "Timeline Visualizer",
     "meta.ogDescription": "Google マップのタイムラインを、移動手段ごとに色分けした地図で振り返る。選んだファイルの中身は端末の外に出ません。",
@@ -864,6 +937,8 @@ const I18N = {
   },
 
   en: {
+    "about.title": "What Timeline Visualizer does",
+    "about.description": "Load a Timeline JSON file exported from Google Maps to visualize your location history on a map. Select a date range and replay routes by walking, train, car, plane, and other transport modes. Review travel distance and time, and save the map as an image. This tool does not record new locations.",
     "meta.title": "Timeline Visualizer — Draw your Google Maps Timeline on a map",
     "meta.description": "A tool for reliving the Timeline JSON exported from Google Maps as a map colour-coded by transport mode, with a playback animation. The file you select is processed entirely on your device and never sent anywhere.",
     "meta.ogTitle": "Timeline Visualizer",
@@ -1006,6 +1081,8 @@ const I18N = {
   },
 
   ko: {
+    "about.title": "Timeline Visualizer로 할 수 있는 일",
+    "about.description": "Google 지도에서 내보낸 타임라인 JSON 파일을 불러와 이동 기록을 지도에 표시하는 웹 도구입니다. 기간을 선택하고 도보, 기차, 자동차, 비행기 등 이동 수단별로 경로를 재생할 수 있습니다. 이동 거리와 시간을 확인하고 지도를 이미지로 저장할 수 있습니다. 새로운 위치 정보는 기록하지 않습니다.",
     "meta.title": "Timeline Visualizer — Google 지도 타임라인을 지도에 그리기",
     "meta.description": "Google 지도에서 내보낸 타임라인 JSON을, 이동 수단별로 색을 나눈 지도와 재생 애니메이션으로 돌아보는 도구. 선택한 파일의 내용은 기기 안에서만 처리되며 외부로 전송되지 않습니다.",
     "meta.ogTitle": "Timeline Visualizer",
@@ -1153,6 +1230,8 @@ const I18N = {
   // Google へアクセスできないため)。項目そのものは日英で実機確認した
   // 「位置情報とプライバシー / Location & Privacy」に合わせてある。
   "zh-Hans": {
+    "about.title": "Timeline Visualizer 的功能",
+    "about.description": "导入从 Google 地图导出的时间轴 JSON 文件，在地图上查看移动记录。选择日期范围，按步行、火车、汽车、飞机等交通方式播放路线。查看移动距离和时间，并将地图保存为图片。本工具不会记录新的位置信息。",
     "meta.title": "Timeline Visualizer — 在地图上绘制你的 Google 地图时间轴",
     "meta.description": "把从 Google 地图导出的时间轴 JSON，用按交通方式分色的地图和播放动画回顾。所选文件的内容只在你的设备上处理，不会发送到外部。",
     "meta.ogTitle": "Timeline Visualizer",
@@ -1294,6 +1373,8 @@ const I18N = {
 
   // 繁体字 (台湾の言い回しに寄せた)。メニュー名は簡体字と同じく未確認。
   "zh-Hant": {
+    "about.title": "Timeline Visualizer 的功能",
+    "about.description": "匯入從 Google 地圖匯出的時間軸 JSON 檔案，在地圖上查看移動紀錄。選擇日期範圍，依步行、火車、汽車、飛機等交通方式播放路線。查看移動距離和時間，並將地圖儲存為圖片。本工具不會記錄新的位置資訊。",
     "meta.title": "Timeline Visualizer — 在地圖上描繪你的 Google 地圖時間軸",
     "meta.description": "把從 Google 地圖匯出的時間軸 JSON，用依交通方式分色的地圖與播放動畫回顧。所選檔案的內容只在你的裝置上處理，不會傳送到外部。",
     "meta.ogTitle": "Timeline Visualizer",
@@ -1497,7 +1578,7 @@ function detectLangFromDevice() {
   return "en";
 }
 
-/** ?lang= → localStorage (前回の手動選択) → 端末の言語 → ja */
+/** ?lang= → localStorage (前回の手動選択) → ja（正規URLの初期言語） */
 function resolveInitialLang() {
   try {
     // ?lang=zh-hant のような大文字小文字の違いも matchLang が吸収する
@@ -1505,7 +1586,7 @@ function resolveInitialLang() {
     if (qp) return qp;
     const stored = matchLang(localStorage.getItem(LANG_STORAGE_KEY));
     if (stored) return stored;
-    return detectLangFromDevice();
+    return FALLBACK_LANG; // Keep the canonical URL consistent with the Japanese source HTML.
   } catch (e) {
     return FALLBACK_LANG; // localStorage / URL が使えない環境向けの最後の砦
   }
