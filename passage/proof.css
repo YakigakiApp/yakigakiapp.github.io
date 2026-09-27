@@ -37,3 +37,10 @@
 @media (max-width: 600px) {
     .proof-milestone .milestone-unit { display: block; }
 }
+
+.proof-feature { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 440px; margin-bottom: 16px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--white); text-decoration: none; }
+.proof-feature strong { display: block; font-size: 14px; font-weight: 600; }
+.proof-feature-detail { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.proof-feature-arrow { flex: 0 0 auto; color: var(--blue); font-size: 22px; }
+.proof-feature:hover { border-color: var(--blue); }
+.proof-feature:hover strong { color: var(--blue); }
