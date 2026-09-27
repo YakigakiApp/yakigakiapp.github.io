@@ -1,11 +1,12 @@
 /* Verified store figures: 2026-09-27. Keep dates and source notes in sync. */
 .passage-proof { margin: 0 0 26px; padding-top: 20px; border-top: 1px solid var(--line); }
-.proof-ratings { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 8px; }
-.proof-ratings a { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 8px; text-decoration: none; font-size: 13px; }
-.proof-ratings a:hover { text-decoration: underline; }
-.proof-score { font-size: 18px; font-weight: 600; white-space: nowrap; }
-.proof-score > span:first-child { color: var(--blue); }
-.proof-out-of { font-size: 12px; font-weight: 400; color: var(--muted); }
+.proof-ratings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-width: 440px; margin-top: 8px; }
+.proof-ratings a { display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--white); text-decoration: none; }
+.proof-ratings a:hover { border-color: #a87520; }
+.proof-rating-store { font-size: 12px; font-weight: 500; }
+.proof-score { display: inline-flex; align-items: baseline; gap: 6px; font-size: 32px; font-weight: 700; line-height: 1.2; letter-spacing: -.04em; white-space: nowrap; }
+.proof-rating-star { align-self: center; color: #a87520; font-size: 25px; line-height: 1; letter-spacing: 0; }
+.proof-out-of { font-size: 13px; font-weight: 400; letter-spacing: 0; color: var(--muted); }
 .proof-note-link { display: inline-block; margin-top: 10px; font-size: 12px; color: var(--muted); }
 .passage-reviews { padding-block: 54px; }
 .reviews-heading { margin-bottom: 24px; }
@@ -26,7 +27,9 @@
     .review-cards { grid-template-columns: 1fr; gap: 16px; }
     .review-card { padding: 24px; }
     .review-card blockquote { font-size: 17px; }
-    .proof-ratings { gap: 8px 18px; }
+    .proof-ratings { gap: 10px; }
+    .proof-score { font-size: 28px; }
+    .proof-rating-star { font-size: 23px; }
 }
 
 
