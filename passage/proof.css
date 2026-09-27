@@ -84,7 +84,6 @@ html.feature-preview-open { overflow: hidden; }
 .rank-display { display: inline-flex; align-items: baseline; gap: 4px; letter-spacing: 0; }
 .rank-display .rank-prefix { margin-right: 0; }
 .achievement-context { color: #53677a; font-size: 11px; line-height: 1.6; }
-.achievement-additional { color: var(--ink); font-size: 11px; line-height: 1.6; font-weight: 500; margin-top: 3px; }
 @media (max-width: 600px) {
     .proof-achievements { gap: 10px; }
     .proof-achievement { padding-inline: 16px; min-height: 138px; }
@@ -92,7 +91,7 @@ html.feature-preview-open { overflow: hidden; }
     .achievement-value { font-size: 28px; }
     .achievement-rank { font-size: 38px; }
     .achievement-label { font-size: 11px; }
-    .achievement-category, .achievement-context, .achievement-additional { font-size: 10px; }
+    .achievement-category, .achievement-context { font-size: 10px; }
 }
 @media (max-width: 350px) {
     .proof-achievements { grid-template-columns: 1fr; gap: 4px; }
