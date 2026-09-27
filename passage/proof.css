@@ -91,10 +91,8 @@ html.feature-preview-open { overflow: hidden; }
 .achievement-category { display: block; font-size: 11px; }
 .achievement-value { color: var(--blue); font-size: clamp(28px, 3vw, 42px); line-height: 1.25; letter-spacing: -.055em; font-weight: 700; white-space: nowrap; margin-block: 8px; }
 .achievement-rank { font-size: 44px; margin-block: 2px; }
-.rank-prefix, .rank-unit { font-size: 16px; letter-spacing: 0; }
-.rank-prefix { margin-right: 4px; }
+.rank-unit { font-size: 16px; letter-spacing: 0; }
 .rank-display { display: inline-flex; align-items: baseline; gap: 4px; letter-spacing: 0; }
-.rank-display .rank-prefix { margin-right: 0; }
 .achievement-context { color: #53677a; font-size: 11px; line-height: 1.6; }
 @media (max-width: 600px) {
     .proof-achievements { gap: 10px; }
