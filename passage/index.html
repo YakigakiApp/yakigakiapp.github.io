@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/path/flight-transition.css">
-    <link rel="stylesheet" href="/passage/proof.css?v=20260927-rank-note">
+    <link rel="stylesheet" href="/passage/proof.css?v=20260927-review-carousel">
     <script src="/path/flight-transition.js"></script>
     <meta name="theme-color" content="#eef3f6">
     <title>Passage｜旅行写真にフライト・鉄道ルートを重ねるアプリ</title>
@@ -177,8 +177,11 @@
         </section>
         <section class="passage-reviews" aria-labelledby="reviews-title">
             <div class="container">
-                <div class="reviews-heading"><p class="eyebrow">FROM YOUR JOURNEYS</p><h2 id="reviews-title"><span class="lang-ja">旅を楽しむユーザーの声。</span><span class="lang-en">From fellow travellers.</span></h2></div>
-                <div class="review-cards">
+                <div class="reviews-heading">
+                    <div><p class="eyebrow">FROM YOUR JOURNEYS</p><h2 id="reviews-title"><span class="lang-ja">旅を楽しむユーザーの声。</span><span class="lang-en">From fellow travellers.</span></h2></div>
+                    <div class="reviews-tools"><p class="reviews-hint"><span class="lang-ja">横にスクロールして読む</span><span class="lang-en">Scroll to read more</span></p><div class="reviews-controls" hidden><button type="button" data-review-step="-1" aria-controls="review-carousel" disabled><span class="review-control-label lang-ja">前のレビュー</span><span class="review-control-label lang-en">Previous reviews</span><span aria-hidden="true">←</span></button><button type="button" data-review-step="1" aria-controls="review-carousel"><span class="review-control-label lang-ja">次のレビュー</span><span class="review-control-label lang-en">Next reviews</span><span aria-hidden="true">→</span></button></div></div>
+                </div>
+                <div id="review-carousel" class="review-cards" tabindex="0" role="region" aria-labelledby="reviews-title">
                     <figure class="review-card">
                         <blockquote><p><span class="lang-ja">写真をよりいっそうかっこよくできてとても良いです！</span><span class="lang-en">It makes my photos look even better. I love it!</span></p></blockquote>
                         <figcaption><a href="https://apps.apple.com/jp/app/id6761323054?see-all=reviews">App Store<span aria-hidden="true"> ↗</span></a><span><span class="lang-ja">2026年4月5日</span><span class="lang-en">5 April 2026 · Translated from Japanese</span></span></figcaption>
@@ -187,13 +190,29 @@
                         <blockquote><p><span class="lang-ja">旅の記事を作る時に一気におしゃれになるので重宝してます</span><span class="lang-en">It instantly makes my travel posts look more stylish. I find it really useful.</span></p></blockquote>
                         <figcaption><a href="https://play.google.com/store/apps/details?id=com.flightphoto.passage&amp;hl=ja&amp;gl=JP">Google Play<span aria-hidden="true"> ↗</span></a><span><span class="lang-ja">2026年4月8日</span><span class="lang-en">8 April 2026 · Translated from Japanese</span></span></figcaption>
                     </figure>
+                    <figure class="review-card">
+                        <blockquote><p><span class="lang-ja">旅録を作る楽しさが出来ました。</span><span class="lang-en">It made documenting my travels fun.</span></p></blockquote>
+                        <figcaption><a href="https://apps.apple.com/jp/app/id6761323054?see-all=reviews">App Store<span aria-hidden="true"> ↗</span></a><span><span class="lang-ja">2026年6月7日 · 抜粋</span><span class="lang-en">7 June 2026 · Excerpt, translated from Japanese</span></span></figcaption>
+                    </figure>
+                    <figure class="review-card">
+                        <blockquote><p><span class="lang-ja">何気ない旅の写真が移動の記録にもなる</span><span class="lang-en">Everyday travel photos become a record of the journey.</span></p></blockquote>
+                        <figcaption><a href="https://play.google.com/store/apps/details?id=com.flightphoto.passage&amp;hl=ja&amp;gl=JP">Google Play<span aria-hidden="true"> ↗</span></a><span><span class="lang-ja">2026年7月5日 · 抜粋</span><span class="lang-en">5 July 2026 · Excerpt, translated from Japanese</span></span></figcaption>
+                    </figure>
+                    <figure class="review-card">
+                        <blockquote><p><span class="lang-ja">フォントやカラーといった細かい調整もできます。</span><span class="lang-en">You can fine-tune fonts and colours.</span></p></blockquote>
+                        <figcaption><a href="https://apps.apple.com/jp/app/id6761323054?see-all=reviews">App Store<span aria-hidden="true"> ↗</span></a><span><span class="lang-ja">2026年4月4日 · 抜粋</span><span class="lang-en">4 April 2026 · Excerpt, translated from Japanese</span></span></figcaption>
+                    </figure>
+                    <figure class="review-card">
+                        <blockquote><p><span class="lang-ja">とてもおしゃれに加工できる魅力的なアプリだと思います！</span><span class="lang-en">It’s a lovely app for stylish photo edits!</span></p></blockquote>
+                        <figcaption><a href="https://play.google.com/store/apps/details?id=com.flightphoto.passage&amp;hl=ja&amp;gl=JP">Google Play<span aria-hidden="true"> ↗</span></a><span><span class="lang-ja">2026年9月14日 · 抜粋</span><span class="lang-en">14 September 2026 · Excerpt, translated from Japanese</span></span></figcaption>
+                    </figure>
                 </div>
                 <details id="proof-sources" class="proof-sources">
                     <summary><span class="lang-ja">実績・評価の集計方法と出典</span><span class="lang-en">Sources &amp; methodology</span></summary>
                     <p><span class="lang-ja">ダウンロード数は、App Store ConnectのPassage本体の全期間ユニット数（約9.32万件、2026年9月25日まで）と、Google Play Consoleの新規ユーザー獲得数の累計（13,849、2026年9月20日まで）の合算です。両ストア間の重複利用者は除いていません。</span><span class="lang-en">Downloads combine lifetime app units for Passage in App Store Connect (approximately 93,200 through 25 September 2026) and cumulative new-user acquisitions in Google Play Console (13,849 through 20 September 2026). People using both stores are not deduplicated.</span></p>
                     <p><span class="lang-ja">ランキングはApp Store「写真／ビデオ」カテゴリの無料アプリランキングです。日本は2026年4月に1位、台湾は2026年4月10日・11日に1位、香港は2026年4月10日に7位（トップ10入り）を記録しました。</span><span class="lang-en">Rankings refer to the App Store’s free Photo &amp; Video chart: No. 1 in Japan in April 2026, No. 1 in Taiwan on 10–11 April 2026, and No. 7 in Hong Kong on 10 April 2026 (Top 10).</span></p>
                     <p><span class="lang-ja">台湾・香港の出典：App Store Trackerの<a href="https://www.appstoretracker.com/app/passage-mapping-your-moments-6761323054?country=tw&amp;range=all" target="_blank" rel="noopener">台湾のランキング履歴</a>・<a href="https://www.appstoretracker.com/app/passage-mapping-your-moments-6761323054?country=hk&amp;range=all" target="_blank" rel="noopener">香港のランキング履歴</a>。2026年9月27日に保存記録を確認しています。</span><span class="lang-en">Sources for Taiwan and Hong Kong: App Store Tracker’s <a href="https://www.appstoretracker.com/app/passage-mapping-your-moments-6761323054?country=tw&amp;range=all" target="_blank" rel="noopener">Taiwan rank history</a> and <a href="https://www.appstoretracker.com/app/passage-mapping-your-moments-6761323054?country=hk&amp;range=all" target="_blank" rel="noopener">Hong Kong rank history</a>. Archived records checked on 27 September 2026.</span></p>
-                    <p><span class="lang-ja">評価は2026年9月27日に日本向け公開ストア情報で確認し、小数第1位に丸めています（App Store：249件、Google Play：172件）。地域や集計方法により表示が異なる場合があります。レビューは各ストアから選んで掲載しています。</span><span class="lang-en">Ratings were checked in public store data for Japan on 27 September 2026 and rounded to one decimal place (App Store: 249 ratings; Google Play: 172 ratings). Values may vary by region and calculation method. These are selected store reviews, translated from Japanese.</span></p>
+                    <p><span class="lang-ja">評価は2026年9月27日に日本向け公開ストア情報で確認し、小数第1位に丸めています（App Store：249件、Google Play：172件）。地域や集計方法により表示が異なる場合があります。レビューは2026年9月27日に各ストアの管理画面で原文を確認して選んでいます。一部を掲載したレビューには「抜粋」と記載しています。</span><span class="lang-en">Ratings were checked in public store data for Japan on 27 September 2026 and rounded to one decimal place (App Store: 249 ratings; Google Play: 172 ratings). Values may vary by region and calculation method. Selected reviews were verified in the store consoles on 27 September 2026 and translated from Japanese. Shortened reviews are marked as excerpts.</span></p>
                 </details>
             </div>
         </section>
@@ -275,6 +294,7 @@
         <div class="feature-dialog-footer"><p><span class="lang-ja">出典：App Store「エディターより♡」<br>掲載画面の一部 · 2026年9月27日撮影</span><span class="lang-en">Source: App Store editorial (Japan)<br>Cropped screenshot · 27 September 2026</span></p><a href="https://apps.apple.com/jp/iphone/story/id1896376203" target="_blank" rel="noopener"><span class="lang-ja">App Storeで特集を読む</span><span class="lang-en">Read the story (Japanese)</span> <span aria-hidden="true">↗</span></a></div>
     </dialog>
     <script src="/passage/feature-preview.js?v=20260927"></script>
+    <script src="/passage/reviews.js?v=20260927"></script>
     <script src="/posts.js"></script>
     <script src="/script.js?v=20260912-seo"></script>
 </body>

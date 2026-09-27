@@ -9,12 +9,20 @@
 .proof-out-of { font-size: 13px; font-weight: 400; letter-spacing: 0; color: var(--muted); }
 .proof-note-link { display: inline-block; margin-top: 10px; font-size: 12px; color: var(--muted); }
 .passage-reviews { padding-block: 54px; }
-.reviews-heading { margin-bottom: 24px; }
+.reviews-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
 .reviews-heading .eyebrow { margin-bottom: 8px; }
 .reviews-heading h2 { font-size: clamp(22px, 2.3vw, 28px); letter-spacing: -.03em; }
-.review-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
-.review-card { display: flex; flex-direction: column; justify-content: space-between; gap: 24px; padding: 28px 30px; background: var(--white); border: 1px solid var(--line); border-radius: 10px; }
-.review-card blockquote { margin: 0; font-size: 18px; font-weight: 500; line-height: 1.9; }
+.reviews-tools { display: flex; flex-shrink: 0; align-items: center; gap: 16px; }
+.reviews-hint { color: var(--muted); font-size: 12px; }
+.reviews-controls { display: flex; gap: 8px; }
+.reviews-controls[hidden] { display: none; }
+.reviews-controls button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--white); font-size: 20px; }
+.reviews-controls button:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+.reviews-controls button:disabled { opacity: .35; }
+.review-control-label { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.review-cards { display: grid; grid-auto-flow: column; grid-auto-columns: min(380px, calc(100% - 40px)); gap: 20px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 2px; padding: 2px 2px 14px; scrollbar-width: thin; scrollbar-color: #b8c8d6 transparent; }
+.review-card { display: flex; flex-direction: column; justify-content: space-between; gap: 24px; min-height: 250px; padding: 28px; background: var(--white); border: 1px solid var(--line); border-radius: 10px; scroll-snap-align: start; }
+.review-card blockquote { margin: 0; font-size: 20px; font-weight: 500; line-height: 1.85; }
 .review-card blockquote p::before { content: '“'; display: block; height: 30px; font-size: 46px; line-height: 1; color: var(--blue); }
 .review-card figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px; font-size: 12px; color: var(--muted); }
 .review-card figcaption a { color: var(--blue); font-weight: 500; }
@@ -22,11 +30,15 @@
 .proof-sources summary { cursor: pointer; width: fit-content; padding-block: 8px; }
 .proof-sources p { margin-top: 12px; line-height: 1.9; }
 .proof-sources a { color: var(--blue); text-underline-offset: 3px; }
+@media (max-width: 900px) {
+    .reviews-heading { flex-wrap: wrap; }
+}
 @media (max-width: 600px) {
     .passage-reviews { padding-block: 36px; }
-    .review-cards { grid-template-columns: 1fr; gap: 16px; }
-    .review-card { padding: 24px; }
-    .review-card blockquote { font-size: 17px; }
+    .reviews-tools { width: 100%; justify-content: space-between; }
+    .review-cards { gap: 16px; }
+    .review-card { padding: 22px; }
+    .review-card blockquote { font-size: 18px; }
     .proof-ratings { gap: 10px; }
     .proof-score { font-size: 28px; }
     .proof-rating-star { font-size: 23px; }
