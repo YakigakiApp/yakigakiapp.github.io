@@ -1,7 +1,5 @@
 /* Verified store figures: 2026-09-27. Keep dates and source notes in sync. */
 .passage-proof { margin: 0 0 26px; padding-top: 20px; border-top: 1px solid var(--line); }
-.proof-milestone { width: fit-content; max-width: 100%; padding: 10px 18px 12px; margin-bottom: 14px; border-left: 3px solid var(--blue); border-radius: 0 8px 8px 0; background: #e0e9f8; font-size: 16px; font-weight: 600; line-height: 1.6; }
-.proof-milestone strong { color: var(--blue); font-size: clamp(40px, 4vw, 52px); letter-spacing: -.04em; white-space: nowrap; }
 .proof-ratings { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 8px; }
 .proof-ratings a { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 8px; text-decoration: none; font-size: 13px; }
 .proof-ratings a:hover { text-decoration: underline; }
@@ -29,14 +27,7 @@
     .review-card blockquote { font-size: 17px; }
     .proof-ratings { gap: 8px 18px; }
 }
-@media (max-width: 380px) {
-    .proof-milestone { padding-inline: 12px; font-size: 14px; }
-}
 
-.proof-milestone .milestone-unit { white-space: nowrap; }
-@media (max-width: 600px) {
-    .proof-milestone .milestone-unit { display: block; }
-}
 
 .proof-feature { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 440px; margin-bottom: 16px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--white); text-decoration: none; }
 .proof-feature strong { display: block; font-size: 14px; font-weight: 600; }
@@ -44,3 +35,30 @@
 .proof-feature-arrow { flex: 0 0 auto; color: var(--blue); font-size: 22px; }
 .proof-feature:hover { border-color: var(--blue); }
 .proof-feature:hover strong { color: var(--blue); }
+.proof-achievements { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; max-width: 560px; }
+.proof-achievement { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px; padding: 14px 24px; text-align: center; }
+.proof-achievement::before, .proof-achievement::after { content: ''; position: absolute; top: 50%; width: 30px; height: 124px; background: url('/passage/laurel.svg') center / contain no-repeat; transform: translateY(-50%); pointer-events: none; }
+.proof-achievement::before { left: 0; }
+.proof-achievement::after { right: 0; transform: translateY(-50%) scaleX(-1); }
+.achievement-label { color: var(--ink); font-size: 12px; line-height: 1.6; font-weight: 500; }
+.achievement-category { display: block; font-size: 11px; }
+.achievement-value { color: var(--blue); font-size: clamp(28px, 3vw, 42px); line-height: 1.25; letter-spacing: -.055em; font-weight: 700; white-space: nowrap; margin-block: 8px; }
+.achievement-rank { font-size: 44px; margin-block: 2px; }
+.rank-prefix, .rank-unit { font-size: 16px; letter-spacing: 0; }
+.rank-prefix { margin-right: 4px; }
+.achievement-context { color: #53677a; font-size: 11px; line-height: 1.6; }
+@media (max-width: 600px) {
+    .proof-achievements { gap: 10px; }
+    .proof-achievement { padding-inline: 16px; min-height: 138px; }
+    .proof-achievement::before, .proof-achievement::after { width: 20px; height: 112px; }
+    .achievement-value { font-size: 28px; }
+    .achievement-rank { font-size: 38px; }
+    .achievement-label { font-size: 11px; }
+    .achievement-category, .achievement-context { font-size: 10px; }
+}
+@media (max-width: 350px) {
+    .proof-achievements { grid-template-columns: 1fr; gap: 4px; }
+    .proof-achievement { width: 240px; max-width: 100%; margin-inline: auto; }
+    .achievement-value { font-size: 36px; }
+    .achievement-rank { font-size: 42px; }
+}
