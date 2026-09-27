@@ -1,7 +1,7 @@
 /* Verified store figures: 2026-09-27. Keep dates and source notes in sync. */
 .passage-proof { margin: 0 0 26px; padding-top: 20px; border-top: 1px solid var(--line); }
-.proof-milestone { font-size: 17px; font-weight: 600; line-height: 1.6; }
-.proof-milestone strong { color: var(--blue); font-size: clamp(30px, 3vw, 38px); letter-spacing: -.04em; }
+.proof-milestone { width: fit-content; max-width: 100%; padding: 10px 18px 12px; margin-bottom: 14px; border-left: 3px solid var(--blue); border-radius: 0 8px 8px 0; background: #e0e9f8; font-size: 16px; font-weight: 600; line-height: 1.6; }
+.proof-milestone strong { color: var(--blue); font-size: clamp(40px, 4vw, 52px); letter-spacing: -.04em; }
 .proof-ratings { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 8px; }
 .proof-ratings a { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 8px; text-decoration: none; font-size: 13px; }
 .proof-ratings a:hover { text-decoration: underline; }
@@ -28,4 +28,7 @@
     .review-card { padding: 24px; }
     .review-card blockquote { font-size: 17px; }
     .proof-ratings { gap: 8px 18px; }
+}
+@media (max-width: 380px) {
+    .proof-milestone { padding-inline: 12px; font-size: 14px; }
 }
