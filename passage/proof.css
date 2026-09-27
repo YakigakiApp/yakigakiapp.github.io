@@ -47,10 +47,8 @@
 .achievement-rank { font-size: 44px; margin-block: 2px; }
 .rank-prefix, .rank-unit { font-size: 16px; letter-spacing: 0; }
 .rank-prefix { margin-right: 4px; }
-.rank-display { display: inline-grid; grid-template-columns: 32px auto 32px; align-items: baseline; column-gap: 4px; letter-spacing: 0; }
-.rank-display .rank-prefix { margin-right: 0; text-align: right; }
-.rank-display .rank-unit { text-align: left; }
-.rank-number { font-variant-numeric: tabular-nums; }
+.rank-display { display: inline-flex; align-items: baseline; gap: 4px; letter-spacing: 0; }
+.rank-display .rank-prefix { margin-right: 0; }
 .achievement-context { color: #53677a; font-size: 11px; line-height: 1.6; }
 .achievement-additional { color: var(--ink); font-size: 11px; line-height: 1.6; font-weight: 500; margin-top: 3px; }
 @media (max-width: 600px) {
