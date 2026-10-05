@@ -175,6 +175,14 @@ body.lang-en .hero h1 { line-height: 1.2; letter-spacing: -.055em; font-size: cl
 .download h2 { font-size: clamp(2.5rem, 4.1vw, 3.75rem); letter-spacing: -.045em; margin-block: 24px; line-height: 1.5; }
 .download p:not(.eyebrow) { color: var(--muted); margin-bottom: 28px; }
 .download .cta-buttons { justify-content: center; }
+.download-story { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 24px; width: min(100%, 620px); min-height: 44px; margin-top: 30px; padding: 24px 26px; color: var(--ink); background: #f5f7f9; border: 1px solid #dce5ec; border-radius: 12px; text-align: left; text-decoration: none; transition: border-color 180ms ease, background 180ms ease, transform 180ms ease; }
+.download-story:hover { background: var(--paper); border-color: #a5b8d1; transform: translateY(-2px); }
+.download-story:focus-visible { outline: 3px solid var(--blue); outline-offset: 4px; }
+.download-story-copy { display: grid; min-width: 0; gap: 8px; }
+.download-story-kicker { color: var(--blue); font-size: 11px; font-weight: 600; line-height: 1.4; letter-spacing: .1em; }
+.download-story strong { font-size: 18px; line-height: 1.5; }
+.download-story-description { color: var(--muted); font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
+.download-story-arrow { color: var(--blue); font-size: 21px; line-height: 1; }
 
 .site-footer { border-top: 1px solid var(--line); padding-top: 64px; background: var(--paper); }
 .footer-main { display: grid; grid-template-columns: 1.1fr 1fr; gap: 70px; padding-bottom: 50px; }
@@ -293,6 +301,8 @@ body:not(.passage-page) .footer-links a { color: var(--muted); font-size: 14px; 
     .download h2 { font-size: clamp(2.2rem, 8.5vw, 3rem); }
     .download p br { display: none; }
     .download .eyebrow { font-size: 12px; letter-spacing: .075em; }
+    .download-story { gap: 16px; margin-top: 26px; padding: 20px; }
+    .download-story strong { font-size: 17px; }
     .footer-main { gap: 35px; padding-bottom: 35px; }
     .site-footer .footer-links { grid-template-columns: 1fr; gap: 30px; }
     .footer-bottom { flex-direction: column; gap: 8px; font-size: 12px; }
