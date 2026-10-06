@@ -826,6 +826,7 @@ const I18N = {
     "meta.ogTitle": "Timeline Visualizer",
     "meta.ogDescription": "Google マップのタイムラインを、移動手段ごとに色分けした地図で振り返る。選んだファイルの中身は端末の外に出ません。",
     "map.unsupported": "このブラウザでは地図の表示に必要なWebGLを利用できません。説明と書き出し手順は引き続きご覧いただけます。",
+    "map.loadFailed": "地図を初期化できませんでした。時間をおいて再読み込みしてください。説明と書き出し手順は引き続きご覧いただけます。",
 
     "promo.alt": "Passage: Mapping Your Moments — 思い出の旅の軌跡を残しませんか？",
 
@@ -969,6 +970,7 @@ const I18N = {
     "meta.ogTitle": "Timeline Visualizer",
     "meta.ogDescription": "Relive your Google Maps Timeline as a map colour-coded by transport mode. The file you select never leaves your device.",
     "map.unsupported": "This browser cannot use the WebGL required to display the map. You can still read the instructions and export steps.",
+    "map.loadFailed": "The map could not be initialised. Please reload the page and try again. You can still read the instructions and export steps.",
 
     "promo.alt": "Passage: Mapping Your Moments — Capture Every Move, Memory",
 
@@ -1114,6 +1116,7 @@ const I18N = {
     "meta.ogTitle": "Timeline Visualizer",
     "meta.ogDescription": "Google 지도 타임라인을, 이동 수단별로 색을 나눈 지도로 돌아보세요. 선택한 파일은 기기 밖으로 나가지 않습니다.",
     "map.unsupported": "이 브라우저에서는 지도 표시에 필요한 WebGL을 사용할 수 없습니다. 안내와 내보내기 방법은 계속 확인할 수 있습니다.",
+    "map.loadFailed": "지도를 초기화할 수 없습니다. 잠시 후 페이지를 새로고침해 주세요. 안내와 내보내기 방법은 계속 확인할 수 있습니다.",
 
     "promo.alt": "Passage: Mapping Your Moments — 여행의 궤적을 지도에 남겨보세요",
 
@@ -1264,6 +1267,7 @@ const I18N = {
     "meta.ogTitle": "Timeline Visualizer",
     "meta.ogDescription": "把 Google 地图时间轴，变成按交通方式分色的地图来回顾。所选文件不会离开你的设备。",
     "map.unsupported": "此浏览器无法使用显示地图所需的 WebGL。你仍可查看说明和导出步骤。",
+    "map.loadFailed": "地图无法初始化。请稍后重新加载页面。你仍可查看说明和导出步骤。",
 
     "promo.alt": "Passage: Mapping Your Moments — 把旅途的轨迹留在地图上",
 
@@ -1408,6 +1412,7 @@ const I18N = {
     "meta.ogTitle": "Timeline Visualizer",
     "meta.ogDescription": "把 Google 地圖時間軸，變成依交通方式分色的地圖來回顧。所選檔案不會離開你的裝置。",
     "map.unsupported": "此瀏覽器無法使用顯示地圖所需的 WebGL。你仍可查看說明和匯出步驟。",
+    "map.loadFailed": "地圖無法初始化。請稍後重新載入頁面。你仍可查看說明和匯出步驟。",
 
     "promo.alt": "Passage: Mapping Your Moments — 把旅途的軌跡留在地圖上",
 
@@ -2427,8 +2432,7 @@ let fmtClock = buildClockFormat();
 // MapLibre は WebGL を使う。利用できない環境でもスクリプトの初期化で全体を
 // 巻き込まず、説明・書き出し手順・言語切替・フッターは読める状態に保つ。
 mapApplication: {
-if (typeof maplibregl === "undefined" ||
-    typeof maplibregl.supported !== "function" || !maplibregl.supported()) {
+function showMapUnavailable(messageKey) {
   document.body.classList.add("map-unavailable");
   const file = document.getElementById("file");
   if (file) file.disabled = true;
@@ -2439,16 +2443,22 @@ if (typeof maplibregl === "undefined" ||
     const message = document.createElement("p");
     message.className = "map-unavailable-message";
     message.setAttribute("role", "status");
-    message.setAttribute("data-i18n", "map.unsupported");
+    message.setAttribute("data-i18n", messageKey);
     mapWrap.appendChild(message);
   }
   const langSelect = document.getElementById("lang");
   if (langSelect) langSelect.addEventListener("change", (e) => applyDocumentLang(e.target.value));
   applyDocumentLang(LANG);
+}
+
+if (typeof maplibregl === "undefined") {
+  showMapUnavailable("map.loadFailed");
   break mapApplication;
 }
 
-const map = new maplibregl.Map({
+let map;
+try {
+  map = new maplibregl.Map({
   container: "map",
   style: MAP_STYLE,
   center: [139.7671, 35.6812],
@@ -2458,6 +2468,13 @@ const map = new maplibregl.Map({
   // 中身が捨てられていて、真っ黒な画が取れる。
   preserveDrawingBuffer: true,
 });
+} catch (error) {
+  const detail = error instanceof Error ? error.message : String(error);
+  const messageKey = /webgl|graphics context/i.test(detail) ? "map.unsupported" : "map.loadFailed";
+  console.error("Timeline Visualizer map initialisation failed.", error);
+  showMapUnavailable(messageKey);
+  break mapApplication;
+}
 map.addControl(new maplibregl.NavigationControl(), "top-right");
 map.addControl(new maplibregl.ScaleControl(), "bottom-left");
 
