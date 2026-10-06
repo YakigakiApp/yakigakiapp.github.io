@@ -807,6 +807,7 @@
 <script src="vendor/maplibre-gl-5.24.0.js"></script>
 <script>
 "use strict";
+(() => {
 
 /* ============================================================
  * 多言語化 (i18n)
@@ -2431,7 +2432,6 @@ let fmtClock = buildClockFormat();
 
 // MapLibre は WebGL を使う。利用できない環境でもスクリプトの初期化で全体を
 // 巻き込まず、説明・書き出し手順・言語切替・フッターは読める状態に保つ。
-mapApplication: {
 function showMapUnavailable(messageKey) {
   document.body.classList.add("map-unavailable");
   const file = document.getElementById("file");
@@ -2453,7 +2453,7 @@ function showMapUnavailable(messageKey) {
 
 if (typeof maplibregl === "undefined") {
   showMapUnavailable("map.loadFailed");
-  break mapApplication;
+  return;
 }
 
 let map;
@@ -2473,7 +2473,7 @@ try {
   const messageKey = /webgl|graphics context/i.test(detail) ? "map.unsupported" : "map.loadFailed";
   console.error("Timeline Visualizer map initialisation failed.", error);
   showMapUnavailable(messageKey);
-  break mapApplication;
+  return;
 }
 map.addControl(new maplibregl.NavigationControl(), "top-right");
 map.addControl(new maplibregl.ScaleControl(), "bottom-left");
@@ -4142,7 +4142,7 @@ shareBtn.addEventListener("click", saveMapImage);
   }
   // それ以外は HTML に書いてある path-biz.com のまま
 })();
-}
+})();
 </script>
 </body>
 </html>
