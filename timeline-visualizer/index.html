@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow, noarchive" />
 <link rel="stylesheet" href="/path/flight-transition.css" />
 <script src="../path/flight-transition.js"></script>
 <title>Timeline Visualizer｜Google マップのタイムライン・移動履歴を地図で可視化</title>
@@ -601,6 +602,7 @@
 </script>
 </head>
 <body>
+<div role="status" style="position:fixed;right:8px;top:8px;z-index:10000;padding:5px 9px;border-radius:999px;background:#7c2d12;color:#fff;font:600 12px/1.2 system-ui,sans-serif;box-shadow:0 1px 4px #0004">TEST PREVIEW</div>
 
 <!-- 自作アプリの案内。href は既定が PC 向けで、iOS と Android のときだけ
      ページ末尾のスクリプトが各ストアへ差し替える。
@@ -2756,7 +2758,10 @@ const anim = {
   t: 0,             // 現在の仮想時刻
   raf: null,
   lastFrame: 0,
-  lastDraw: 0,
+  lastTrailDraw: 0,
+  lastHeadDraw: 0,
+  lastUiDraw: 0,
+  lastCameraDraw: 0,
   index: 0,         // flat 上の現在位置
   coords: [],       // 走破済みの座標列(経路ごとの配列)
   zoom: 12,         // 追尾中の現在のズーム
@@ -3438,6 +3443,12 @@ function desiredZoom(legIndex) {
 function updateCamera(snap) {
   if (!followEl.checked || state.flat.length < 2) return;
 
+  const now = performance.now();
+  // Camera movement asks MapLibre to render the whole map. Keep following smooth,
+  // but do not issue more work than a 30 fps display can show.
+  if (!snap && now - anim.lastCameraDraw < 33) return;
+  anim.lastCameraDraw = now;
+
   const leg = currentLeg();
   // 固定のときは leg が変わっても縮尺は動かさない。取り直すのは、再生開始などの
   // snap と、縮尺の決め方そのものを変えたとき (zoomDirty) だけ。
@@ -3452,13 +3463,24 @@ function updateCamera(snap) {
 
 function draw(force) {
   const now = performance.now();
-  // setData は毎フレーム呼ばない。点数が多いときはさらに間隔を空ける。
-  const interval = state.flat.length > 20000 ? 100 : 33;
-  if (!force && now - anim.lastDraw < interval) return;
-  anim.lastDraw = now;
-  map.getSource("traveled").setData(traveledGeoJSON(anim.t));
-  map.getSource("traveled-gaps").setData(traveledGapsGeoJSON(anim.t));
-  map.getSource("head").setData(headGeoJSON(anim.t));
+  // The accumulated route can contain tens of thousands of points. Rebuilding
+  // and transferring it is deliberately slower than the lightweight moving head.
+  const trailInterval = state.flat.length > 20000 ? 100 : 33;
+  if (force || now - anim.lastTrailDraw >= trailInterval) {
+    anim.lastTrailDraw = now;
+    map.getSource("traveled").setData(traveledGeoJSON(anim.t));
+    map.getSource("traveled-gaps").setData(traveledGapsGeoJSON(anim.t));
+  }
+
+  // Keep the visible position fluid even when the accumulated route is large.
+  if (force || now - anim.lastHeadDraw >= 33) {
+    anim.lastHeadDraw = now;
+    map.getSource("head").setData(headGeoJSON(anim.t));
+  }
+
+  // Text and range painting do not need to run at animation-frame frequency.
+  if (!force && now - anim.lastUiDraw < 100) return;
+  anim.lastUiDraw = now;
 
   // 移動手段と、縮尺を決めている leg の実測速度を出す。なぜこの縮尺なのかを
   // 画面で確かめられるようにしておく。
