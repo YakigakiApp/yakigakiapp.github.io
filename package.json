@@ -1,0 +1,7 @@
+{
+  "name": "path-website",
+  "private": true,
+  "devDependencies": {
+    "wrangler": "4.135.0"
+  }
+}
