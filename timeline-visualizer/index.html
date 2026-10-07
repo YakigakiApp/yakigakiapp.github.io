@@ -3119,7 +3119,7 @@ function indexAt(t) {
 }
 
 function advanceTo(index) {
-  if (index < anim.index) resetTraveled(); // 巻き戻しは作り直す
+  if (index < anim.index - 1) resetTraveled(); // 巻き戻しは作り直す
   for (let i = anim.index; i <= index; i++) {
     anim.coords[state.spanOf[i]].push([state.flat[i].lng, state.flat[i].lat]);
   }
