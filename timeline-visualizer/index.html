@@ -371,7 +371,7 @@
   }
   .swatch { width: 18px; height: 3px; border-radius: 2px; flex: none; }
   /* 途切れた区間は色ではなく線種で示すので、凡例でも中立色にする */
-  .swatch.dashed { height: 0; border-radius: 0; border-top: 2px dashed var(--ink-3); }
+  .swatch.gap { height: 0; border-radius: 0; border-top: 1px solid var(--ink-3); }
 
   /* ---- 再生 ---- */
 
@@ -712,7 +712,7 @@
       <div><span class="swatch" style="background:var(--transit)"></span><span data-i18n="legend.transit">電車・バス</span><b id="d-transit">–</b></div>
       <div><span class="swatch" style="background:var(--air)"></span><span data-i18n="legend.air">飛行機・船</span><b id="d-air">–</b></div>
       <div><span class="swatch" style="background:var(--other)"></span><span data-i18n="legend.other">その他・不明</span><b id="d-other">–</b></div>
-      <div><span class="swatch dashed"></span><span data-i18n="legend.gap">記録が途切れた区間</span><b data-i18n="legend.gapDashed">破線</b></div>
+      <div><span class="swatch gap"></span><span data-i18n="legend.gap">記録が途切れた区間</span><b data-i18n="legend.gapThin">細線</b></div>
     </div>
   </section>
 
@@ -770,7 +770,7 @@
     <div class="checks">
       <label class="check"><input type="checkbox" id="smooth" checked /><span data-i18n="options.smooth">ポイント間をなめらかにする</span></label>
       <label class="check"><input type="checkbox" id="despike" checked /><span data-i18n="options.despike">計測誤差の点を除去する</span></label>
-      <label class="check"><input type="checkbox" id="connect" checked /><span data-i18n="options.connect">途切れた区間を点線でつなぐ</span></label>
+      <label class="check"><input type="checkbox" id="connect" checked /><span data-i18n="options.connect">途切れた区間を細い実線でつなぐ</span></label>
     </div>
   </section>
 
@@ -870,7 +870,7 @@ const I18N = {
     "legend.air": "飛行機・船",
     "legend.other": "その他・不明",
     "legend.gap": "記録が途切れた区間",
-    "legend.gapDashed": "破線",
+    "legend.gapThin": "細線",
 
     "player.h": "再生",
     "player.playAria": "再生",
@@ -907,7 +907,7 @@ const I18N = {
     "options.h": "表示",
     "options.smooth": "ポイント間をなめらかにする",
     "options.despike": "計測誤差の点を除去する",
-    "options.connect": "途切れた区間を点線でつなぐ",
+    "options.connect": "途切れた区間を細い実線でつなぐ",
 
     "edit.h": "移動手段の修正",
     "edit.hint": "地図上の経路をクリックすると移動手段を変更できます。",
@@ -932,7 +932,7 @@ const I18N = {
     "status.building": "経路を構築中…",
     "status.loaded": "{n} 件の経路 ({from} 〜 {to})",
     "status.tracksPoints": "{tracks} 件の経路 / {points} 点",
-    "status.gapsConnected": "途切れ {n} 箇所を点線で接続",
+    "status.gapsConnected": "途切れ {n} 箇所を細い実線で接続",
     "status.thinned": "{n} 点から間引き",
     "status.despiked": "飛び値 {n} 点を除去 ({pct}%)",
     "status.unknownTypes": "判別できない移動手段 {n} 種 ({sample})",
@@ -1016,7 +1016,7 @@ const I18N = {
     "legend.air": "Flight & ferry",
     "legend.other": "Other / unknown",
     "legend.gap": "Gap in recording",
-    "legend.gapDashed": "dashed",
+    "legend.gapThin": "thin line",
 
     "player.h": "Playback",
     "player.playAria": "Play",
@@ -1053,7 +1053,7 @@ const I18N = {
     "options.h": "Display",
     "options.smooth": "Smooth the line between points",
     "options.despike": "Remove measurement-error points",
-    "options.connect": "Connect gaps with a dotted line",
+    "options.connect": "Connect gaps with a thin solid line",
 
     "edit.h": "Fix transport mode",
     "edit.hint": "Click a route on the map to change its transport mode.",
@@ -1078,7 +1078,7 @@ const I18N = {
     "status.building": "Building routes…",
     "status.loaded": "{n} routes ({from} – {to})",
     "status.tracksPoints": "{tracks} routes / {points} points",
-    "status.gapsConnected": "{n} gap(s) bridged with a dotted line",
+    "status.gapsConnected": "{n} gap(s) bridged with a thin solid line",
     "status.thinned": "Thinned from {n} points",
     "status.despiked": "Removed {n} outlier point(s) ({pct}%)",
     "status.unknownTypes": "{n} unrecognized transport type(s) ({sample})",
@@ -1164,7 +1164,7 @@ const I18N = {
     "legend.air": "비행기·배",
     "legend.other": "기타·알 수 없음",
     "legend.gap": "기록이 끊긴 구간",
-    "legend.gapDashed": "점선",
+    "legend.gapThin": "가는 선",
 
     "player.h": "재생",
     "player.playAria": "재생",
@@ -1201,7 +1201,7 @@ const I18N = {
     "options.h": "표시",
     "options.smooth": "지점 사이를 부드럽게 잇기",
     "options.despike": "측정 오차 지점 제거",
-    "options.connect": "끊긴 구간을 점선으로 잇기",
+    "options.connect": "끊긴 구간을 가는 실선으로 잇기",
 
     "edit.h": "이동 수단 수정",
     "edit.hint": "지도 위의 경로를 클릭하면 이동 수단을 바꿀 수 있습니다.",
@@ -1226,7 +1226,7 @@ const I18N = {
     "status.building": "경로를 만드는 중…",
     "status.loaded": "경로 {n}건 ({from} ~ {to})",
     "status.tracksPoints": "경로 {tracks}건 / {points}점",
-    "status.gapsConnected": "끊긴 {n}곳을 점선으로 연결",
+    "status.gapsConnected": "끊긴 {n}곳을 가는 실선으로 연결",
     "status.thinned": "{n}점에서 솎아냄",
     "status.despiked": "튀는 값 {n}점 제거 ({pct}%)",
     "status.unknownTypes": "알 수 없는 이동 수단 {n}종 ({sample})",
@@ -1311,7 +1311,7 @@ const I18N = {
     "legend.air": "飞机·轮船",
     "legend.other": "其他·未知",
     "legend.gap": "记录中断的区间",
-    "legend.gapDashed": "虚线",
+    "legend.gapThin": "细线",
 
     "player.h": "播放",
     "player.playAria": "播放",
@@ -1348,7 +1348,7 @@ const I18N = {
     "options.h": "显示",
     "options.smooth": "让点与点之间更平滑",
     "options.despike": "移除测量误差的点",
-    "options.connect": "用虚线连接中断的区间",
+    "options.connect": "用细实线连接中断的区间",
 
     "edit.h": "修正交通方式",
     "edit.hint": "点击地图上的路线即可更改交通方式。",
@@ -1373,7 +1373,7 @@ const I18N = {
     "status.building": "正在构建路线…",
     "status.loaded": "{n} 条路线（{from} ~ {to}）",
     "status.tracksPoints": "{tracks} 条路线 / {points} 个点",
-    "status.gapsConnected": "已用虚线连接 {n} 处中断",
+    "status.gapsConnected": "已用细实线连接 {n} 处中断",
     "status.thinned": "已从 {n} 个点中抽稀",
     "status.despiked": "已移除 {n} 个跳变点（{pct}%）",
     "status.unknownTypes": "无法识别的交通方式 {n} 种（{sample}）",
@@ -1456,7 +1456,7 @@ const I18N = {
     "legend.air": "飛機·船",
     "legend.other": "其他·不明",
     "legend.gap": "記錄中斷的區間",
-    "legend.gapDashed": "虛線",
+    "legend.gapThin": "細線",
 
     "player.h": "播放",
     "player.playAria": "播放",
@@ -1493,7 +1493,7 @@ const I18N = {
     "options.h": "顯示",
     "options.smooth": "讓點與點之間更平滑",
     "options.despike": "移除測量誤差的點",
-    "options.connect": "用虛線連接中斷的區間",
+    "options.connect": "用細實線連接中斷的區間",
 
     "edit.h": "修正交通方式",
     "edit.hint": "點選地圖上的路線即可變更交通方式。",
@@ -1518,7 +1518,7 @@ const I18N = {
     "status.building": "正在建立路線…",
     "status.loaded": "{n} 條路線（{from} ~ {to}）",
     "status.tracksPoints": "{tracks} 條路線 / {points} 個點",
-    "status.gapsConnected": "已用虛線連接 {n} 處中斷",
+    "status.gapsConnected": "已用細實線連接 {n} 處中斷",
     "status.thinned": "已從 {n} 個點中抽稀",
     "status.despiked": "已移除 {n} 個跳動點（{pct}%）",
     "status.unknownTypes": "無法辨識的交通方式 {n} 種（{sample}）",
@@ -1778,6 +1778,9 @@ const LINE_COLOR = [
 
 const ROUTE_WIDTH = ["interpolate", ["linear"], ["zoom"], 4, 1.2, 10, 2.4, 16, 5];
 const TRAVELED_WIDTH = ["interpolate", ["linear"], ["zoom"], 4, 2.5, 10, 4, 16, 7];
+// 補完区間は通常経路の80%の太さにする (TEST PREVIEW)。
+const GAP_WIDTH = ["interpolate", ["linear"], ["zoom"], 4, 0.96, 10, 1.92, 16, 4];
+const TRAVELED_GAP_WIDTH = ["interpolate", ["linear"], ["zoom"], 4, 2, 10, 3.2, 16, 5.6];
 
 /* ------------------------------------------------------------
  * 計測誤差(飛び値)の除去
@@ -2497,7 +2500,7 @@ const mapReady = new Promise((resolve) => {
     map.addSource("traveled-gaps", { type: "geojson", data: EMPTY });
     map.addSource("head", { type: "geojson", data: EMPTY });
 
-    // 記録された経路と同じ色・同じ太さで、破線だけを変える。
+    // 記録された経路と同じ色・80%の太さの実線で、補完区間を区別する。
     // 通った道は分からないが、その移動の一部であることは同じなので。
     map.addLayer({
       id: "gaps-line",
@@ -2506,8 +2509,7 @@ const mapReady = new Promise((resolve) => {
       layout: { "line-cap": "butt", "line-join": "round" },
       paint: {
         "line-color": LINE_COLOR,
-        "line-width": ROUTE_WIDTH,
-        "line-dasharray": [2, 2],
+        "line-width": GAP_WIDTH,
         "line-opacity": 0.85,
       },
     });
@@ -2531,8 +2533,7 @@ const mapReady = new Promise((resolve) => {
       layout: { "line-cap": "butt", "line-join": "round" },
       paint: {
         "line-color": LINE_COLOR,
-        "line-width": TRAVELED_WIDTH,
-        "line-dasharray": [2, 2],
+        "line-width": TRAVELED_GAP_WIDTH,
         "line-opacity": 0,
       },
     });
@@ -2572,7 +2573,7 @@ const mapReady = new Promise((resolve) => {
  *
  * 経路と経路の間は記録が無い。GPS が切れていた区間では終点と次の始点が
  * 離れ、線が途切れて見える。ここを大圏航路でつなぐが、記録された経路とは
- * 区別できるよう点線で描く(実際にその道を通った証拠は無いため)。
+ * 区別できるよう細い実線で描く(実際にその道を通った証拠は無いため)。
  * ------------------------------------------------------------ */
 
 const MIN_GAP_M = 50; // これ未満なら既に繋がって見える
@@ -2646,7 +2647,7 @@ function gapsToGeoJSON(bySpan) {
 
 /**
  * 再生で到達した空白。渡り終えたものは全体を、いま渡っている最中のものは
- * 現在地までを描く。空白の上でも現在地は進むので、点線もそれに合わせて伸ばす。
+ * 現在地までを描く。空白の上でも現在地は進むので、補完線もそれに合わせて伸ばす。
  */
 function traveledGapsGeoJSON(t) {
   const crossing = crossingGapSpan();
@@ -3133,7 +3134,7 @@ function traveledGeoJSON(t) {
 
   // 現在地は記録された点と点の間にもいる。線をそこまで伸ばさないと、次の点に
   // 届くまで軌跡が現在地に置いていかれる(速い再生ほど離れて見える)。
-  // 空白を渡っている間は点線側が伸びるので、こちらは伸ばさない。
+  // 空白を渡っている間は補完線側が伸びるので、こちらは伸ばさない。
   const live = crossingGapSpan() >= 0 ? -1 : state.spanOf[headIndex()];
   const head = headPosition(t);
 
@@ -3161,7 +3162,7 @@ function headIndex() {
 /**
  * いま渡っている最中の空白の経路番号。渡っていなければ -1。
  *
- * 点線でつないだ空白は「記録は無いが移動はしている」区間なので、現在地は
+ * 細い実線でつないだ空白は「記録は無いが移動はしている」区間なので、現在地は
  * その上を進む。つないでいない空白(移動では説明できない飛び方)では、
  * 現在地は次の経路が始まるまでその場に留まる。
  */
@@ -3184,7 +3185,7 @@ function headPosition(t) {
   const cross = crossingGapSpan();
   if (state.spanOf[i] !== state.spanOf[i + 1] && cross < 0) return [cur.lng, cur.lat];
   const k = Math.min(1, (t - cur.t) / (next.t - cur.t));
-  // 空白の上では点線と同じ大圏航路をたどる。別の線の上を進んではいけない
+  // 空白の上では補完線と同じ大圏航路をたどる。別の線の上を進んではいけない
   if (cross >= 0) {
     const gap = state.gaps[cross];
     return gcPoint(gap.from, gap.to, gap.angle, k);
@@ -3508,7 +3509,7 @@ function paintSeek() {
 const SKIP_AFTER_MS = 30 * 60 * 1000; // これ以上その場に留まるなら飛ばす
 const STILL_M = 150;                  // この範囲に収まっていれば「動いていない」
 
-// 点線でつないだ空白のうち、この速さに届かないものは移動ではなく滞在とみなす。
+// 細い実線でつないだ空白のうち、この速さに届かないものは移動ではなく滞在とみなす。
 // 宿泊も、家の中での GPS の揺れで数十 m 離れた空白として残ることが多い。
 const IDLE_MPS = 0.5; // 1.8km/h。歩くより遅ければ、その場に留まっていたと読む
 
@@ -3540,7 +3541,7 @@ function skipIdle() {
 
   while (i + 1 < a.length) {
     if (state.spanOf[i] !== state.spanOf[i + 1]) {
-      if (!idleGap(i)) break;   // 点線の上を実際に移動している区間は飛ばさない
+      if (!idleGap(i)) break;   // 補完線の上を実際に移動している区間は飛ばさない
       anchor = a[i + 1];        // 空白の向こう側を新しい基準にする
     } else if (haversine(anchor, a[i + 1]) >= STILL_M) {
       break;                    // 同じ経路の中で動き出した
