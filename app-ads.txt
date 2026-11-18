@@ -146,3 +146,4 @@ smaato.com, 1100059563, RESELLER, 07bcf65f187117b4
 improvedigital.com, 2464, RESELLER
 anzu.io, 691e95644e633a6eee2567ee, RESELLER, 1c1b7acf4992136c
 loopme.com, 9621, RESELLER, 6c8d5f95897a5a3b
+facebook.com, 1788172675748691, DIRECT, c3e20eee3f780d68
